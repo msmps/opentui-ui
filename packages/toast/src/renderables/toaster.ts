@@ -9,7 +9,16 @@ import { BoxRenderable, type RenderContext } from "@opentui/core";
 
 import { TOAST_WIDTH } from "../constants";
 import { ToastState } from "../state";
-import type { Toast, ToasterOptions, ToastToDismiss } from "../types";
+import type {
+  Position,
+  StackingMode,
+  Toast,
+  ToasterOffset,
+  ToasterOptions,
+  ToastIcons,
+  ToastOptions,
+  ToastToDismiss,
+} from "../types";
 import { getPositionStyles, isCenteredPosition, isTopPosition } from "../utils";
 import { ToastRenderable } from "./toast";
 
@@ -65,30 +74,95 @@ import { ToastRenderable } from "./toast";
  * ```
  */
 export class ToasterRenderable extends BoxRenderable {
-  private _options: ToasterOptions;
+  private _options: ToasterOptions = {};
   private _toastRenderables: Map<string | number, ToastRenderable> = new Map();
   private _unsubscribe: (() => void) | null = null;
 
   constructor(ctx: RenderContext, options: ToasterOptions = {}) {
-    const position = options.position ?? "bottom-right";
-    const offset = options.offset ?? {};
-    const positionStyles = getPositionStyles(position, offset);
-
-    // For center positioning, don't constrain the container width
-    // The individual toasts will have their own maxWidth
-    const isCentered = isCenteredPosition(position);
-
     super(ctx, {
       id: "toaster",
       flexDirection: "column",
-      gap: options.gap ?? 1,
+      gap: 1,
       zIndex: 9999,
-      ...(isCentered ? {} : { maxWidth: options.maxWidth ?? TOAST_WIDTH }),
-      ...positionStyles,
     });
 
     this._options = options;
+    this.applyLayoutOptions();
     this.subscribe();
+  }
+
+  /**
+   * Apply layout-related options to the renderable
+   */
+  private applyLayoutOptions(): void {
+    const toastPosition = this._options.position ?? "bottom-right";
+    const offset = this._options.offset ?? {};
+    const positionStyles = getPositionStyles(toastPosition, offset);
+    const isCentered = isCenteredPosition(toastPosition);
+
+    Object.assign(this, positionStyles);
+    super.gap = this._options.gap ?? 1;
+    if (!isCentered) {
+      super.maxWidth = this._options.maxWidth ?? TOAST_WIDTH;
+    }
+  }
+
+  // Property setters for Solid.js support
+
+  private isToastPosition(value: unknown): value is Position {
+    return (
+      value === "top-left" ||
+      value === "top-center" ||
+      value === "top-right" ||
+      value === "bottom-left" ||
+      value === "bottom-center" ||
+      value === "bottom-right"
+    );
+  }
+
+  // @ts-expect-error - Widening type to accept toast Position values alongside BoxRenderable's position
+  public override set position(value: unknown) {
+    if (this.isToastPosition(value)) {
+      this._options.position = value;
+      this.applyLayoutOptions();
+    } else {
+      super.position = value as "relative" | "absolute" | null | undefined;
+    }
+  }
+
+  public set offset(value: ToasterOffset) {
+    this._options.offset = value;
+    this.applyLayoutOptions();
+  }
+
+  public override set gap(value: number) {
+    this._options.gap = value;
+    super.gap = value;
+  }
+
+  public set visibleToasts(value: number) {
+    this._options.visibleToasts = value;
+  }
+
+  public set closeButton(value: boolean) {
+    this._options.closeButton = value;
+  }
+
+  public set icons(value: Partial<ToastIcons> | false) {
+    this._options.icons = value;
+  }
+
+  public set stackingMode(value: StackingMode) {
+    this._options.stackingMode = value;
+  }
+
+  public override set maxWidth(value: number) {
+    this._options.maxWidth = value;
+    super.maxWidth = value;
+  }
+
+  public set toastOptions(value: ToastOptions) {
+    this._options.toastOptions = value;
   }
 
   /**

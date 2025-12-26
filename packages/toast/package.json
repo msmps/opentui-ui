@@ -29,6 +29,10 @@
     "./react": {
       "types": "./dist/react.d.mts",
       "import": "./dist/react.mjs"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.mts",
+      "import": "./dist/solid.mjs"
     }
   },
   "bugs": {
@@ -54,16 +58,21 @@
   "devDependencies": {
     "@opentui/core": "^0.1.63",
     "@opentui/react": "^0.1.63",
+    "@opentui/solid": "^0.1.63",
     "@types/bun": "latest",
     "tsdown": "^0.18.2",
     "typescript": "^5"
   },
   "peerDependencies": {
     "@opentui/core": "^0.1.63",
-    "@opentui/react": "^0.1.63"
+    "@opentui/react": "^0.1.63",
+    "@opentui/solid": "^0.1.63"
   },
   "peerDependenciesMeta": {
     "@opentui/react": {
+      "optional": true
+    },
+    "@opentui/solid": {
       "optional": true
     }
   }

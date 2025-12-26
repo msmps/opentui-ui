@@ -1,7 +1,13 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/themes.ts", "src/icons.ts", "src/react.tsx"],
+  entry: [
+    "src/index.ts",
+    "src/themes.ts",
+    "src/icons.ts",
+    "src/react.tsx",
+    "src/solid.ts",
+  ],
   format: "esm",
   dts: true,
   clean: true,
