@@ -1,6 +1,6 @@
 {
   "name": "@opentui-ui/toast",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A beautiful toast library for terminal UIs built on OpenTUI",
   "author": "Matt Simpson",
   "license": "MIT",

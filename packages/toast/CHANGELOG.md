@@ -1,5 +1,13 @@
 # @opentui-ui/toast
 
+## 0.0.4
+
+### Patch Changes
+
+- [#4](https://github.com/msmps/opentui-ui/pull/4) [`89ae94d`](https://github.com/msmps/opentui-ui/commit/89ae94df92e03774fbed0461d3038a6b25915934) Thanks [@msmps](https://github.com/msmps)! - added `useToasts` hook to react for reactivity
+
+- [#4](https://github.com/msmps/opentui-ui/pull/4) [`89ae94d`](https://github.com/msmps/opentui-ui/commit/89ae94df92e03774fbed0461d3038a6b25915934) Thanks [@msmps](https://github.com/msmps)! - added `useToasts` hook to solid for reactivity
+
 ## 0.0.3
 
 ### Patch Changes
