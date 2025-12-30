@@ -35,6 +35,22 @@ class Observer {
   toasts: Toast[] = [];
   dismissedToasts: Set<string | number> = new Set();
 
+  // Cached active toasts for referential stability
+  private _activeToasts: Toast[] = [];
+
+  private _updateActiveToastsCache = (): void => {
+    const active = this.toasts.filter(
+      (toast) => !this.dismissedToasts.has(toast.id),
+    );
+
+    if (
+      active.length !== this._activeToasts.length ||
+      active.some((t, i) => t !== this._activeToasts[i])
+    ) {
+      this._activeToasts = active;
+    }
+  };
+
   /**
    * Subscribe to toast state changes
    */
@@ -64,8 +80,9 @@ class Observer {
    * Add a new toast
    */
   addToast = (data: Toast): void => {
-    this.publish(data);
     this.toasts = [...this.toasts, data];
+    this._updateActiveToastsCache();
+    this.publish(data);
   };
 
   /**
@@ -107,6 +124,7 @@ class Observer {
         }
         return toast;
       });
+      this._updateActiveToastsCache();
     } else {
       // Add new toast
       this.addToast({
@@ -137,6 +155,7 @@ class Observer {
   dismiss = (id?: string | number): string | number | undefined => {
     if (id !== undefined) {
       this.dismissedToasts.add(id);
+      this._updateActiveToastsCache();
       // Use requestAnimationFrame equivalent for terminal (setTimeout with 0)
       setTimeout(() => {
         for (const subscriber of this.subscribers) {
@@ -146,10 +165,12 @@ class Observer {
     } else {
       // Dismiss all toasts
       for (const toast of this.toasts) {
+        this.dismissedToasts.add(toast.id);
         for (const subscriber of this.subscribers) {
           subscriber({ id: toast.id, dismiss: true });
         }
       }
+      this._updateActiveToastsCache();
     }
 
     return id;
@@ -420,11 +441,8 @@ class Observer {
     };
   };
 
-  /**
-   * Get all active (non-dismissed) toasts
-   */
   getActiveToasts = (): Toast[] => {
-    return this.toasts.filter((toast) => !this.dismissedToasts.has(toast.id));
+    return this._activeToasts;
   };
 }
 

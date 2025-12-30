@@ -19,6 +19,7 @@ import {
   getSpinnerConfig,
   getTypeIcon,
 } from "../icons";
+import { ToastState } from "../state";
 import type {
   SpinnerConfig,
   Toast,
@@ -353,6 +354,7 @@ export class ToastRenderable extends BoxRenderable {
    * Dismiss this toast
    *
    * Triggers the onDismiss callback and schedules removal.
+   * Also notifies ToastState subscribers (e.g., React hooks) about the dismissal.
    */
   public dismiss(): void {
     if (this._dismissed) return;
@@ -367,6 +369,8 @@ export class ToastRenderable extends BoxRenderable {
     this.stopSpinner();
 
     this._toast.onDismiss?.(this._toast);
+
+    ToastState.dismiss(this._toast.id);
 
     // Wait a bit before removing (for potential exit effects)
     setTimeout(() => {

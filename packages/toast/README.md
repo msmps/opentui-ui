@@ -610,6 +610,41 @@ async function uploadFile(file: File) {
 }
 ```
 
+## React
+
+For React applications, use the `Toaster` component and `useToasts` hook:
+
+```tsx
+import { Toaster, useToasts, toast } from "@opentui-ui/toast/react";
+
+function App() {
+  return (
+    <>
+      <Toaster position="bottom-right" />
+      <MyComponent />
+    </>
+  );
+}
+
+function MyComponent() {
+  const { toasts } = useToasts();
+
+  useKeyboard((key) => {
+    if (key.name === "1") {
+      toast.success("Hello World");
+    }
+  });
+
+  return (
+    <box>
+      <text>Active toasts: {toasts.length}</text>
+    </box>
+  );
+}
+```
+
+The `useToasts` hook provides **reactive access** to the current toast state, re-rendering your component whenever toasts are added, updated, or dismissed.
+
 ## TypeScript
 
 Full TypeScript support with exported types:
