@@ -11,7 +11,7 @@ import {
   TextAttributes,
   TextRenderable,
 } from "@opentui/core";
-
+import { resolvePadding } from "@opentui-ui/utils";
 import { TIME_BEFORE_UNMOUNT, TOAST_WIDTH } from "../constants";
 import {
   DEFAULT_ICONS,
@@ -28,11 +28,7 @@ import type {
   ToastStyle,
 } from "../types";
 import { isAction } from "../types";
-import {
-  computeToastDuration,
-  computeToastStyle,
-  resolvePadding,
-} from "../utils";
+import { computeToastDuration, computeToastStyle } from "../utils";
 
 /**
  * Options for creating a ToastRenderable
@@ -110,7 +106,13 @@ export class ToastRenderable extends BoxRenderable {
     );
 
     // Resolve padding from computed style
-    const padding = resolvePadding(computedStyle);
+    // Defaults are passed separately so user shorthands (padding, paddingX) cascade correctly
+    const padding = resolvePadding(computedStyle, {
+      top: 0,
+      right: 1,
+      bottom: 0,
+      left: 1,
+    });
 
     super(ctx, {
       id: `toast-${options.toast.id}`,

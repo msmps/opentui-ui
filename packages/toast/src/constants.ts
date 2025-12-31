@@ -82,8 +82,6 @@ export const DEFAULT_STYLE: ToastStyle = {
   borderStyle: "single",
   borderColor: "#333333",
   minHeight: 3,
-  paddingX: 1,
-  paddingY: 0,
   backgroundColor: "#1a1a1a",
   foregroundColor: "#ffffff",
   mutedColor: "#6b7280",

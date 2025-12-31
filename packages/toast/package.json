@@ -59,6 +59,7 @@
     "@opentui/core": "^0.1.63",
     "@opentui/react": "^0.1.63",
     "@opentui/solid": "^0.1.63",
+    "@opentui-ui/utils": "workspace:^",
     "@types/bun": "latest",
     "@types/react": "^19.2.7",
     "react": "^19.2.3",

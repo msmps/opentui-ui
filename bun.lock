@@ -16,6 +16,7 @@
       "name": "@opentui-ui/toast",
       "version": "0.0.4",
       "devDependencies": {
+        "@opentui-ui/utils": "workspace:*",
         "@opentui/core": "^0.1.63",
         "@opentui/react": "^0.1.63",
         "@opentui/solid": "^0.1.63",

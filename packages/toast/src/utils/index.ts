@@ -9,8 +9,4 @@ export {
   isTopPosition,
 } from "./position";
 // Style utilities
-export {
-  computeToastDuration,
-  computeToastStyle,
-  resolvePadding,
-} from "./style";
+export { computeToastDuration, computeToastStyle } from "./style";

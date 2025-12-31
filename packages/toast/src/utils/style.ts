@@ -1,79 +1,10 @@
 /**
  * Style utilities for toast rendering
- *
- * Handles style merging and padding resolution.
  */
 
+import { mergeStyles } from "@opentui-ui/utils";
 import { DEFAULT_TOAST_OPTIONS } from "../constants";
 import type { ToastOptions, ToastStyle, ToastType } from "../types";
-
-/**
- * Resolved padding values (all four sides)
- */
-export interface ResolvedPadding {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-/**
- * Resolve padding values with shorthand support
- *
- * Priority: specific > axis shorthand > uniform
- * e.g., paddingLeft > paddingX > padding
- *
- * @example
- * ```ts
- * resolvePadding({ padding: 1 })
- * // => { top: 1, right: 1, bottom: 1, left: 1 }
- *
- * resolvePadding({ paddingX: 2, paddingY: 1 })
- * // => { top: 1, right: 2, bottom: 1, left: 2 }
- *
- * resolvePadding({ padding: 1, paddingLeft: 3 })
- * // => { top: 1, right: 1, bottom: 1, left: 3 }
- * ```
- */
-export function resolvePadding(style: ToastStyle): ResolvedPadding {
-  const x = style.padding ?? style.paddingX ?? 0;
-  const y = style.padding ?? style.paddingY ?? 0;
-
-  return {
-    top: style.paddingTop ?? y,
-    right: style.paddingRight ?? x,
-    bottom: style.paddingBottom ?? y,
-    left: style.paddingLeft ?? x,
-  };
-}
-
-/**
- * Merge multiple ToastStyle objects (later wins)
- *
- * Uses shallow Object.assign, so later styles completely
- * override earlier values for the same property.
- *
- * @example
- * ```ts
- * mergeStyles(
- *   { borderColor: "red", padding: 1 },
- *   { borderColor: "blue" }
- * )
- * // => { borderColor: "blue", padding: 1 }
- * ```
- */
-export function mergeStyles(
-  ...styles: (Partial<ToastStyle> | undefined)[]
-): ToastStyle {
-  const result: ToastStyle = {};
-
-  for (const style of styles) {
-    if (!style) continue;
-    Object.assign(result, style);
-  }
-
-  return result;
-}
 
 /**
  * Compute the final style for a toast by merging all style layers
