@@ -1,5 +1,11 @@
 # @opentui-ui/toast
 
+## 0.0.5
+
+### Patch Changes
+
+- [`83ba2b5`](https://github.com/msmps/opentui-ui/commit/83ba2b5766eebfbf2a033dbae3b715ed41fda26e) Thanks [@msmps](https://github.com/msmps)! - fix padding specificity bug
+
 ## 0.0.4
 
 ### Patch Changes
