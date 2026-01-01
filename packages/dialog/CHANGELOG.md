@@ -1,5 +1,11 @@
 # @opentui-ui/dialog
 
+## 0.0.3
+
+### Patch Changes
+
+- [`e06da56`](https://github.com/msmps/opentui-ui/commit/e06da56317d679e9c1b7c855229c2e630c2378fc) Thanks [@msmps](https://github.com/msmps)! - resolve backdrop color handling bug
+
 ## 0.0.2
 
 ### Patch Changes
