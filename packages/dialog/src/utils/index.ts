@@ -1,0 +1,1 @@
+export { getDialogWidth } from "./style";

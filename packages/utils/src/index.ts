@@ -8,4 +8,4 @@
 export type { BorderConfig, BorderStyle, Padding, PaddingInput } from "./types";
 
 // Utils
-export { mergeStyles, resolvePadding } from "./utils";
+export { mergeStyles, normalizeOpacity, resolvePadding } from "./utils";
