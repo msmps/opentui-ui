@@ -1,5 +1,11 @@
 # @opentui-ui/dialog
 
+## 0.0.4
+
+### Patch Changes
+
+- [`ed30989`](https://github.com/msmps/opentui-ui/commit/ed30989013b542b9e2151d55d5bab82e1a21878e) Thanks [@msmps](https://github.com/msmps)! - added theme support and improved default styling options
+
 ## 0.0.3
 
 ### Patch Changes
