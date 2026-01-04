@@ -369,7 +369,7 @@ export function DialogProvider(props: DialogProviderProps) {
   useEffect(() => {
     renderer.root.add(container);
     return () => {
-      container.destroy();
+      container.destroyRecursively();
       renderer.root.remove(container.id);
       manager.destroy();
     };
