@@ -16,7 +16,6 @@ export class DialogRenderable extends BoxRenderable {
   private _dialog: Dialog;
   private _computedStyle: ComputedDialogStyle;
   private _containerOptions?: DialogContainerOptions;
-  private _contentBox: BoxRenderable;
   private _onRemove?: (dialog: Dialog) => void;
   private _closed: boolean = false;
   private _revealed: boolean = false;
@@ -28,16 +27,34 @@ export class DialogRenderable extends BoxRenderable {
     });
 
     const isDeferred = options.dialog.deferred === true;
+    const padding = computedStyle.resolvedPadding;
+
+    const dialogWidth = getDialogWidth(
+      options.dialog.size,
+      options.containerOptions,
+      ctx.width,
+    );
+
+    const panelWidth =
+      typeof computedStyle.width === "number"
+        ? computedStyle.width
+        : dialogWidth;
 
     super(ctx, {
       id: `dialog-${options.dialog.id}`,
       position: "absolute",
-      left: 0,
-      top: 0,
-      width: ctx.width,
-      height: ctx.height,
-      alignItems: "center",
-      justifyContent: "center",
+      width: panelWidth,
+      maxWidth: computedStyle.maxWidth ?? ctx.width - 2,
+      minWidth: computedStyle.minWidth,
+      maxHeight: computedStyle.maxHeight,
+      backgroundColor: computedStyle.backgroundColor,
+      border: computedStyle.border,
+      borderColor: computedStyle.borderColor,
+      borderStyle: computedStyle.borderStyle,
+      paddingTop: padding.top,
+      paddingRight: padding.right,
+      paddingBottom: padding.bottom,
+      paddingLeft: padding.left,
       visible: !isDeferred,
     });
 
@@ -47,48 +64,13 @@ export class DialogRenderable extends BoxRenderable {
     this._onRemove = options.onRemove;
     this._revealed = !isDeferred;
 
-    this._contentBox = this.createContentPanel();
-    this.add(this._contentBox);
     this.createContent();
-  }
-
-  private createContentPanel(): BoxRenderable {
-    const style = this._computedStyle;
-    const padding = style.resolvedPadding;
-
-    const dialogWidth = getDialogWidth(
-      this._dialog.size,
-      this._containerOptions,
-      this._ctx.width,
-    );
-
-    const panelWidth =
-      typeof style.width === "number" ? style.width : dialogWidth;
-
-    const panel = new BoxRenderable(this.ctx, {
-      id: `${this.id}-content`,
-      width: panelWidth,
-      maxWidth: style.maxWidth ?? this._ctx.width - 2,
-      minWidth: style.minWidth,
-      maxHeight: style.maxHeight,
-      backgroundColor: style.backgroundColor,
-      border: style.border,
-      borderColor: style.borderColor,
-      borderStyle: style.borderStyle,
-      paddingTop: padding.top,
-      paddingRight: padding.right,
-      paddingBottom: padding.bottom,
-      paddingLeft: padding.left,
-      onMouseUp: (e) => e.stopPropagation(),
-    });
-
-    return panel;
   }
 
   private createContent(): void {
     try {
       const contentRenderable = this._dialog.content(this.ctx);
-      this._contentBox.add(contentRenderable);
+      this.add(contentRenderable);
     } catch (error) {
       const dialogId = this._dialog.id;
       const originalMessage =
@@ -113,8 +95,6 @@ export class DialogRenderable extends BoxRenderable {
   }
 
   public updateDimensions(width: number): void {
-    this.width = width;
-
     const dialogWidth = getDialogWidth(
       this._dialog.size,
       this._containerOptions,
@@ -124,9 +104,9 @@ export class DialogRenderable extends BoxRenderable {
       typeof this._computedStyle.width === "number"
         ? this._computedStyle.width
         : dialogWidth;
-    this._contentBox.width = panelWidth;
-    this._contentBox.maxWidth = this._computedStyle.maxWidth ?? width - 2;
 
+    this.width = panelWidth;
+    this.maxWidth = this._computedStyle.maxWidth ?? width - 2;
     this.requestRender();
   }
 
@@ -152,11 +132,6 @@ export class DialogRenderable extends BoxRenderable {
 
   public get dialog(): Dialog {
     return this._dialog;
-  }
-
-  /** @internal For framework portal rendering */
-  public get contentBox(): BoxRenderable {
-    return this._contentBox;
   }
 
   public get isClosed(): boolean {

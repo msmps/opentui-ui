@@ -1,5 +1,4 @@
 import { BoxRenderable, type RenderContext } from "@opentui/core";
-import { mergeStyles } from "@opentui-ui/utils";
 import { DIALOG_Z_INDEX } from "../constants";
 import type { DialogManager } from "../manager";
 import type {
@@ -10,6 +9,7 @@ import type {
   DialogSize,
 } from "../types";
 import { isDialogToClose } from "../types";
+import { computeDialogStyle } from "../utils";
 import { BackdropRenderable } from "./backdrop";
 import { DialogRenderable } from "./dialog";
 
@@ -49,9 +49,11 @@ export class DialogContainerRenderable extends BoxRenderable {
       position: "absolute",
       left: 0,
       top: 0,
-      width: 0,
-      height: 0,
+      width: ctx.width,
+      height: ctx.height,
       zIndex: DIALOG_Z_INDEX,
+      alignItems: "center",
+      justifyContent: "center",
     });
 
     this._manager = options.manager;
@@ -171,14 +173,13 @@ export class DialogContainerRenderable extends BoxRenderable {
 
     if (hasDialogs) {
       const topDialog = dialogs[dialogs.length - 1];
+      if (!topDialog) return;
 
-      // Dialog style takes priority, falls back to container defaults
-      const style = mergeStyles(
-        this._options.dialogOptions?.style,
-        topDialog?.style,
-      );
-
-      this._backdrop.updateStyle(style);
+      const computedStyle = computeDialogStyle({
+        dialog: topDialog,
+        containerOptions: this._options,
+      });
+      this._backdrop.updateStyle(computedStyle);
     }
 
     this._backdrop.requestRender();
@@ -203,8 +204,14 @@ export class DialogContainerRenderable extends BoxRenderable {
   }
 
   public updateDimensions(width: number, height?: number): void {
+    const h = height ?? this._ctx.height;
+
+    // Update container dimensions
+    this.width = width;
+    this.height = h;
+
     // Update backdrop dimensions
-    this._backdrop.updateDimensions(width, height ?? this._ctx.height);
+    this._backdrop.updateDimensions(width, h);
 
     // Update dialog dimensions
     for (const [, renderable] of this._dialogRenderables) {

@@ -22,8 +22,6 @@ export class BackdropRenderable extends BoxRenderable {
   private _onClick?: () => void;
 
   constructor(ctx: RenderContext, options: BackdropRenderableOptions = {}) {
-    const { color, opacity } = computeBackdropColor(options.style);
-
     super(ctx, {
       id: "dialog-backdrop",
       position: "absolute",
@@ -31,7 +29,7 @@ export class BackdropRenderable extends BoxRenderable {
       top: 0,
       width: ctx.width,
       height: ctx.height,
-      backgroundColor: createBackdropRGBA(color, opacity),
+      backgroundColor: "transparent",
       visible: options.visible ?? false,
       onMouseUp: () => this.handleClick(),
     });

@@ -406,7 +406,7 @@ export function DialogProvider(props: DialogProviderProps) {
         if (dialogWithJsx.deferred) {
           deferredDialogs.push(dialogRenderable);
         }
-        portals.push(createPortal(jsxContent, dialogRenderable.contentBox, id));
+        portals.push(createPortal(jsxContent, dialogRenderable, id));
       }
     }
 
