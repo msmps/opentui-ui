@@ -41,23 +41,32 @@ import type {
   BaseConfirmOptions,
   BaseDialogActions,
   BasePromptOptions,
-  Dialog,
   DialogContainerOptions,
   DialogId,
   DialogShowOptions,
+  InternalDialog,
+  InternalDialogShowOptions,
 } from "./types";
 
-interface DialogWithJsx extends Dialog {
+interface DialogWithJsx extends InternalDialog {
   [JSX_CONTENT_KEY]?: ReactNode;
 }
 
 /** Internal type for show options that include JSX bridging keys */
-interface DialogShowOptionsWithJsx extends DialogShowOptions {
+interface DialogShowOptionsWithJsx extends InternalDialogShowOptions {
   [JSX_CONTENT_KEY]?: ReactNode;
 }
 
+/**
+ * Content factory that returns React elements.
+ * Must be a function to ensure consistent behavior with Solid adapter
+ * and prevent timing issues with JSX evaluation.
+ */
+export type ContentFactory = () => ReactNode;
+
 export interface ShowOptions extends Omit<DialogShowOptions, "content"> {
-  content: (() => ReactNode) | ReactNode;
+  /** Must be a function returning JSX: `() => <MyDialog />` */
+  content: ContentFactory;
 }
 
 // ============================================================================
@@ -75,7 +84,7 @@ type ConfirmContent = (ctx: ConfirmContext) => ReactNode;
 type AlertContent = (ctx: AlertContext) => ReactNode;
 
 /** Content factory for choice dialogs. */
-type ChoiceContent<K extends string> = (ctx: ChoiceContext<K>) => ReactNode;
+type ChoiceContent<K> = (ctx: ChoiceContext<K>) => ReactNode;
 
 /**
  * Options for a generic prompt dialog.
@@ -98,7 +107,7 @@ export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
  * Options for a choice dialog.
  * @template K The type of keys for the available choices.
  */
-export interface ChoiceOptions<K extends string>
+export interface ChoiceOptions<K>
   extends BaseChoiceOptions<ChoiceContent<K>, K> {}
 
 /**
@@ -113,9 +122,7 @@ export interface DialogActions extends BaseDialogActions<ShowOptions> {
   /** Show an alert dialog and wait for the user to dismiss it. */
   alert: (options: AlertOptions) => Promise<void>;
   /** Show a choice dialog and wait for the user to select an option. */
-  choice: <K extends string>(
-    options: ChoiceOptions<K>,
-  ) => Promise<K | undefined>;
+  choice: <K>(options: ChoiceOptions<K>) => Promise<K | undefined>;
 }
 
 const DialogContext = createContext<DialogManager | null>(null);
@@ -127,12 +134,12 @@ const createPlaceholderContent = () => (ctx: RenderContext) =>
  * Helper to build dialog show options for React adapter.
  * Handles both direct show/replace calls and async prompt methods.
  *
- * @param content - ReactNode, () => ReactNode, or (ctx) => ReactNode
+ * @param content - () => ReactNode or (ctx) => ReactNode
  * @param rest - Dialog options excluding content
  * @param ctx - Optional context for async prompts (prompt, confirm, alert, choice)
  */
 function buildShowOptions(
-  content: ReactNode | (() => ReactNode),
+  content: ContentFactory,
   rest: Omit<DialogShowOptions, "content">,
 ): DialogShowOptionsWithJsx;
 function buildShowOptions<TCtx>(
@@ -141,16 +148,11 @@ function buildShowOptions<TCtx>(
   ctx: TCtx,
 ): DialogShowOptionsWithJsx;
 function buildShowOptions(
-  content: ReactNode | ((...args: unknown[]) => unknown),
+  content: (...args: unknown[]) => unknown,
   rest: Omit<DialogShowOptions, "content">,
   ctx?: unknown,
 ): DialogShowOptionsWithJsx {
-  const resolvedContent =
-    typeof content === "function"
-      ? ctx !== undefined
-        ? content(ctx)
-        : content()
-      : content;
+  const resolvedContent = ctx !== undefined ? content(ctx) : content();
 
   return {
     ...rest,
@@ -190,8 +192,8 @@ function useDialogManager(): DialogManager {
  * ```tsx
  * const dialog = useDialog();
  *
- * // Show a dialog
- * dialog.show({ content: <text>Hello</text> });
+ * // Show a dialog (content must be a function)
+ * dialog.show({ content: () => <text>Hello</text> });
  *
  * // Close the top dialog
  * dialog.close();
@@ -247,9 +249,7 @@ export function useDialog(): DialogActions {
         return manager.alert((ctx) => buildShowOptions(content, rest, ctx));
       },
 
-      choice: <K extends string>(
-        options: ChoiceOptions<K>,
-      ): Promise<K | undefined> => {
+      choice: <K,>(options: ChoiceOptions<K>): Promise<K | undefined> => {
         const { content, fallback, ...rest } = options;
         return manager.choice<K>((ctx) => ({
           ...buildShowOptions(content, rest, ctx),

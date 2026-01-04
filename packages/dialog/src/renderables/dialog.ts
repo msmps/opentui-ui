@@ -1,5 +1,5 @@
 import { BoxRenderable, type RenderContext } from "@opentui/core";
-import type { Dialog, DialogContainerOptions } from "../types";
+import type { DialogContainerOptions, InternalDialog } from "../types";
 import {
   type ComputedDialogStyle,
   computeDialogStyle,
@@ -7,16 +7,16 @@ import {
 } from "../utils";
 
 export interface DialogRenderableOptions {
-  dialog: Dialog;
+  dialog: InternalDialog;
   containerOptions?: DialogContainerOptions;
-  onRemove?: (dialog: Dialog) => void;
+  onRemove?: (dialog: InternalDialog) => void;
 }
 
 export class DialogRenderable extends BoxRenderable {
-  private _dialog: Dialog;
+  private _dialog: InternalDialog;
   private _computedStyle: ComputedDialogStyle;
   private _containerOptions?: DialogContainerOptions;
-  private _onRemove?: (dialog: Dialog) => void;
+  private _onRemove?: (dialog: InternalDialog) => void;
   private _closed: boolean = false;
   private _revealed: boolean = false;
 
@@ -130,7 +130,7 @@ export class DialogRenderable extends BoxRenderable {
     this._onRemove?.(this._dialog);
   }
 
-  public get dialog(): Dialog {
+  public get dialog(): InternalDialog {
     return this._dialog;
   }
 

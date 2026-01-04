@@ -36,16 +36,23 @@ export interface Dialog {
   unstyled?: boolean;
   /** @default false */
   closeOnClickOutside?: boolean;
+  onClose?: () => void;
+  onOpen?: () => void;
+  onBackdropClick?: () => void;
+}
+
+/**
+ * Internal dialog type with adapter-specific properties.
+ * Used by React/Solid adapters for deferred rendering.
+ * @internal
+ */
+export interface InternalDialog extends Dialog {
   /**
    * When true, the dialog is initially hidden until `reveal()` is called.
    * Used by framework adapters to prevent flicker when JSX content is
    * injected via portals after the dialog renderable is created.
-   * @internal
    */
   deferred?: boolean;
-  onClose?: () => void;
-  onOpen?: () => void;
-  onBackdropClick?: () => void;
 }
 
 export interface DialogToClose {
@@ -54,6 +61,14 @@ export interface DialogToClose {
 }
 
 export interface DialogShowOptions extends Omit<Dialog, "id"> {
+  id?: DialogId;
+}
+
+/**
+ * Internal show options with adapter-specific properties.
+ * @internal
+ */
+export interface InternalDialogShowOptions extends Omit<InternalDialog, "id"> {
   id?: DialogId;
 }
 
@@ -123,7 +138,7 @@ export interface BaseAlertOptions<TContent> extends AsyncDialogOptions {
  * @template TContent The content type (varies by adapter).
  * @template K The type of keys for the available choices.
  */
-export interface BaseChoiceOptions<TContent, K extends string = string>
+export interface BaseChoiceOptions<TContent, K = unknown>
   extends AsyncDialogOptions {
   /** Content factory that receives the choice context. */
   content: TContent;

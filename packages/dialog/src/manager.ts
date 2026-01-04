@@ -44,7 +44,7 @@ type AlertContent = (
 ) => Renderable;
 
 /** Content factory for choice dialogs. */
-type ChoiceContent<K extends string> = (
+type ChoiceContent<K> = (
   renderCtx: RenderContext,
   choiceCtx: ChoiceContext<K>,
 ) => Renderable;
@@ -70,8 +70,7 @@ export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
  * Options for a choice dialog using core renderables.
  * @template K The type of keys for the available choices.
  */
-export interface ChoiceOptions<K extends string>
-  extends BaseChoiceOptions<ChoiceContent<K>> {}
+export interface ChoiceOptions<K> extends BaseChoiceOptions<ChoiceContent<K>> {}
 
 /**
  * Extended DialogShowOptions for async dialog factory functions.
@@ -576,11 +575,11 @@ export class DialogManager {
    * });
    * ```
    */
-  choice<K extends string>(options: ChoiceOptions<K>): Promise<K | undefined>;
-  choice<K extends string>(
+  choice<K>(options: ChoiceOptions<K>): Promise<K | undefined>;
+  choice<K>(
     showFactory: (ctx: ChoiceContext<K>) => AsyncShowOptions<K | undefined>,
   ): Promise<K | undefined>;
-  choice<K extends string>(
+  choice<K>(
     input:
       | ChoiceOptions<K>
       | ((ctx: ChoiceContext<K>) => AsyncShowOptions<K | undefined>),

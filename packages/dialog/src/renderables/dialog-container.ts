@@ -2,11 +2,11 @@ import { BoxRenderable, type RenderContext } from "@opentui/core";
 import { DIALOG_Z_INDEX } from "../constants";
 import type { DialogManager } from "../manager";
 import type {
-  Dialog,
   DialogContainerOptions,
   DialogId,
   DialogOptions,
   DialogSize,
+  InternalDialog,
 } from "../types";
 import { isDialogToClose } from "../types";
 import { computeDialogStyle } from "../utils";
@@ -139,7 +139,7 @@ export class DialogContainerRenderable extends BoxRenderable {
     return this._dialogRenderables;
   }
 
-  private addOrUpdateDialog(dialog: Dialog): void {
+  private addOrUpdateDialog(dialog: InternalDialog): void {
     const existing = this._dialogRenderables.get(dialog.id);
 
     if (existing) {
@@ -192,7 +192,7 @@ export class DialogContainerRenderable extends BoxRenderable {
     }
   }
 
-  private handleDialogRemoved(dialog: Dialog): void {
+  private handleDialogRemoved(dialog: InternalDialog): void {
     const renderable = this._dialogRenderables.get(dialog.id);
     if (renderable) {
       this._dialogRenderables.delete(dialog.id);

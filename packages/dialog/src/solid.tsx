@@ -45,17 +45,19 @@ import type {
   DialogId,
   DialogShowOptions,
   DialogToClose,
+  InternalDialog,
+  InternalDialogShowOptions,
 } from "./types";
 
 /** Function returning JSX. Required because Solid JSX is eagerly evaluated. */
 export type ContentAccessor = () => JSX.Element;
 
-interface DialogWithJsx extends Dialog {
+interface DialogWithJsx extends InternalDialog {
   [JSX_CONTENT_KEY]?: ContentAccessor;
 }
 
 /** Internal type for show options that include JSX bridging keys */
-interface DialogShowOptionsWithJsx extends DialogShowOptions {
+interface DialogShowOptionsWithJsx extends InternalDialogShowOptions {
   [JSX_CONTENT_KEY]?: ContentAccessor;
 }
 
@@ -85,9 +87,7 @@ type ConfirmContent = (ctx: ConfirmContext) => ContentAccessor;
 type AlertContent = (ctx: AlertContext) => ContentAccessor;
 
 /** Content factory for choice dialogs. */
-type ChoiceContent<K extends string> = (
-  ctx: ChoiceContext<K>,
-) => ContentAccessor;
+type ChoiceContent<K> = (ctx: ChoiceContext<K>) => ContentAccessor;
 
 /**
  * Options for a generic prompt dialog.
@@ -110,7 +110,7 @@ export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
  * Options for a choice dialog.
  * @template K The type of keys for the available choices.
  */
-export interface ChoiceOptions<K extends string>
+export interface ChoiceOptions<K>
   extends BaseChoiceOptions<ChoiceContent<K>, K> {}
 
 /**
@@ -125,9 +125,7 @@ export interface DialogActions extends BaseDialogActions<ShowOptions> {
   /** Show an alert dialog and wait for the user to dismiss it. */
   alert: (options: AlertOptions) => Promise<void>;
   /** Show a choice dialog and wait for the user to select an option. */
-  choice: <K extends string>(
-    options: ChoiceOptions<K>,
-  ) => Promise<K | undefined>;
+  choice: <K>(options: ChoiceOptions<K>) => Promise<K | undefined>;
 }
 
 interface DialogContextValue {
@@ -278,9 +276,7 @@ export function useDialog(): DialogActions {
       return manager.alert((ctx) => buildShowOptions(content, rest, ctx));
     },
 
-    choice: <K extends string>(
-      options: ChoiceOptions<K>,
-    ): Promise<K | undefined> => {
+    choice: <K,>(options: ChoiceOptions<K>): Promise<K | undefined> => {
       const { content, fallback, ...rest } = options;
       return manager.choice<K>((ctx) => ({
         ...buildShowOptions(content, rest, ctx),

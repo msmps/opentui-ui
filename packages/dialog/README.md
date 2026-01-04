@@ -20,7 +20,6 @@
 - Dialog stack support (multiple dialogs)
 - Focus management (saves/restores focus on open/close)
 - Theme presets (minimal, unstyled)
-- Backdrop stacking modes (prevent compounded dimming)
 - React and Solid.js integrations
 
 ## Table of Contents
@@ -43,7 +42,6 @@
 - [Customization](#customization)
   - [Default Styling](#default-styling)
   - [Themes](#themes)
-  - [Backdrop Modes](#backdrop-modes)
   - [Unstyled Mode](#unstyled-mode)
   - [Size Presets](#size-presets)
 - [TypeScript](#typescript)
@@ -132,14 +130,14 @@ import { BoxRenderable, TextRenderable } from "@opentui/core";
 
 // Confirmation dialog - returns boolean
 const confirmed = await manager.confirm({
-  content: (renderCtx, { resolve }) => {
+  content: (renderCtx, { resolve, dismiss }) => {
     const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
     const title = new TextRenderable(renderCtx, { content: "Delete file?" });
     box.add(title);
 
     const buttons = new BoxRenderable(renderCtx, { flexDirection: "row" });
     const cancelBtn = new TextRenderable(renderCtx, { content: "Cancel" });
-    cancelBtn.on("mouseUp", () => resolve(false));
+    cancelBtn.on("mouseUp", dismiss);
     const confirmBtn = new TextRenderable(renderCtx, { content: "Confirm" });
     confirmBtn.on("mouseUp", () => resolve(true));
     buttons.add(cancelBtn);
@@ -148,6 +146,7 @@ const confirmed = await manager.confirm({
 
     return box;
   },
+  fallback: false, // Optional: value when dismissed via ESC/backdrop (default: false)
 });
 
 // Alert dialog - returns void
@@ -170,6 +169,7 @@ const action = await manager.choice<"save" | "discard">({
     // ... build UI
     return box;
   },
+  fallback: "discard", // Optional: value when dismissed via ESC/backdrop
 });
 
 // Generic prompt - returns typed value or undefined
@@ -187,7 +187,7 @@ const value = await manager.prompt<string>({
 
 | Method | Returns | Context Properties | Notes |
 | ------ | ------- | ------------------ | ----- |
-| `confirm()` | `Promise<boolean>` | `resolve(boolean)`, `dialogId` | `resolve(true)` = confirm, `resolve(false)` = cancel |
+| `confirm()` | `Promise<boolean>` | `resolve(boolean)`, `dismiss()`, `dialogId` | `resolve(true)` = confirm, `dismiss()` = cancel |
 | `alert()` | `Promise<void>` | `dismiss()`, `dialogId` | Just acknowledge and close |
 | `choice<K>()` | `Promise<K \| undefined>` | `resolve(key)`, `dismiss()`, `dialogId` | `dismiss()` returns `undefined` |
 | `prompt<T>()` | `Promise<T \| undefined>` | `resolve(value)`, `dismiss()`, `dialogId` | `dismiss()` returns `undefined` |
@@ -212,7 +212,6 @@ const id = manager.show({
   size?: "small" | "medium" | "large" | "full",
   style?: DialogStyle,
   unstyled?: boolean,
-  backdropMode?: "per-dialog" | "top-only",
   closeOnClickOutside?: boolean, // default: false
   onClose?: () => void,
   onOpen?: () => void,
@@ -256,7 +255,6 @@ const container = new DialogContainerRenderable(renderer, {
     // Default options for all dialogs
     style: DialogStyle,
     unstyled: boolean,
-    backdropMode: "per-dialog" | "top-only",
   },
   sizePresets: {
     // Custom size presets (terminal columns)
@@ -266,7 +264,6 @@ const container = new DialogContainerRenderable(renderer, {
   },
   closeOnEscape: true, // ESC key closes top dialog (default: true)
   unstyled: false, // Disable default styles (default: false)
-  backdropMode: "top-only", // Backdrop stacking behavior (default)
 });
 
 // Add to render tree
@@ -377,11 +374,12 @@ const confirmed = await dialog.confirm({
     <box flexDirection="column">
       <text>Delete this file?</text>
       <box flexDirection="row" gap={1}>
-        <text onMouseUp={() => ctx.resolve(false)}>Cancel</text>
+        <text onMouseUp={ctx.dismiss}>Cancel</text>
         <text onMouseUp={() => ctx.resolve(true)}>Confirm</text>
       </box>
     </box>
   ),
+  fallback: false, // Optional: value when dismissed via ESC/backdrop (default: false)
 });
 
 // Alert dialog - returns void (just acknowledgment)
@@ -404,6 +402,7 @@ const action = await dialog.choice<"save" | "discard">({
       <text onMouseUp={ctx.dismiss}>Cancel</text>
     </box>
   ),
+  fallback: "discard", // Optional: value when dismissed via ESC/backdrop
 });
 
 // Generic prompt - returns typed value or undefined
@@ -456,7 +455,6 @@ dialog.show({
   size: "medium",
   style: { backgroundColor: "#1a1a1a" },
   unstyled: false,
-  backdropMode: "top-only",
   closeOnClickOutside: true,
   onClose: () => {},
   onOpen: () => {},
@@ -630,7 +628,6 @@ Out of the box, dialogs use the **minimal** theme:
 - Lighter backdrop (35% opacity)
 - No borders
 - Tighter padding (1 cell all around)
-- `top-only` backdrop mode (only topmost dialog shows backdrop)
 
 This provides a clean, unobtrusive appearance while still being usable immediately.
 
@@ -662,22 +659,6 @@ const container = new DialogContainerRenderable(renderer, {
   size: "large", // Override specific options
 });
 ```
-
-### Backdrop Modes
-
-When stacking multiple dialogs, backdrops can compound and make the screen too dark. Use `backdropMode` to control this:
-
-```ts
-const container = new DialogContainerRenderable(renderer, {
-  manager,
-  backdropMode: "per-dialog", // Each dialog renders its own backdrop
-});
-```
-
-| Mode | Description |
-| ---- | ----------- |
-| `top-only` | Only the topmost dialog renders a backdrop (default) |
-| `per-dialog` | Each dialog renders its own backdrop |
 
 ### Unstyled Mode
 
@@ -733,7 +714,6 @@ import type {
   ComputedDialogStyle,
   ComputeDialogStyleInput,
   Dialog,
-  DialogBackdropMode,
   DialogContainerOptions,
   DialogContentFactory,
   DialogId,
