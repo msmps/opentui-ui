@@ -6,6 +6,7 @@ import type {
   PromptContext,
 } from "./prompts";
 import type {
+  AsyncDialogOptions,
   BaseAlertOptions,
   BaseChoiceOptions,
   BaseConfirmOptions,
@@ -17,6 +18,12 @@ import type {
 } from "./types";
 
 type DialogSubscriber = (data: Dialog | DialogToClose) => void;
+
+// ============================================================================
+// Core Prompt Types (for imperative/non-framework usage)
+// ============================================================================
+// These extend the generic base types with core-specific content signatures.
+// Core content functions receive both the context and RenderContext.
 
 /** Content factory for prompt dialogs. */
 type PromptContent<T> = (
@@ -64,11 +71,10 @@ export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
  * @template K The type of keys for the available choices.
  */
 export interface ChoiceOptions<K extends string>
-  extends BaseChoiceOptions<ChoiceContent<K>, K> {}
+  extends BaseChoiceOptions<ChoiceContent<K>> {}
 
 /**
  * Extended DialogShowOptions for async dialog factory functions.
- * Includes optional fallback value for ESC/backdrop dismissal.
  * @template T The type of value returned on dismiss.
  */
 export interface AsyncShowOptions<T> extends DialogShowOptions {
@@ -315,29 +321,84 @@ export class DialogManager {
     return this.dialogs.length > 0;
   }
 
+  // ===========================================================================
+  // Async Dialog Helpers
+  // ===========================================================================
+
   /**
-   * Creates a Promise with safe-resolve mechanics for async dialogs.
-   * The resolver ensures the promise only resolves once and closes the dialog.
+   * Builds DialogShowOptions from either a factory function or a CoreOptions object.
+   * Used by confirm, alert, and choice methods to reduce duplication.
    */
-  private createAsyncResolver<T>(dialogId: DialogId): {
-    promise: Promise<T>;
-    resolve: (value: T) => void;
-  } {
-    let resolved = false;
-    let resolvePromise: (value: T) => void;
-    const promise = new Promise<T>((r) => {
-      resolvePromise = r;
-    });
-
-    const resolve = (value: T) => {
-      if (resolved) return;
-      resolved = true;
-      resolvePromise(value);
-      this.close(dialogId);
+  private buildShowOptions<
+    TCtx,
+    TOptions extends AsyncDialogOptions & {
+      content: (renderCtx: RenderContext, ctx: TCtx) => Renderable;
+    },
+  >(
+    input: TOptions | ((ctx: TCtx) => DialogShowOptions),
+    ctx: TCtx,
+  ): DialogShowOptions {
+    if (typeof input === "function") {
+      return input(ctx);
+    }
+    const { content, ...rest } = input;
+    return {
+      ...rest,
+      content: (renderCtx: RenderContext) => content(renderCtx, ctx),
     };
-
-    return { promise, resolve };
   }
+
+  /**
+   * Internal helper that handles common async dialog logic:
+   * - Promise creation
+   * - Safe double-resolve protection
+   * - Dialog show/close lifecycle
+   * - Fallback value handling for ESC/backdrop dismissal
+   */
+  private showAsyncDialog<T>(
+    createContextAndOptions: (
+      safeResolve: (value: T) => void,
+      dialogId: DialogId,
+    ) => {
+      showOptions: DialogShowOptions;
+      fallback?: T;
+    },
+    defaultDismissValue: T,
+  ): Promise<T> {
+    return new Promise<T>((resolve) => {
+      let resolved = false;
+
+      // Pre-generate the dialog ID so it can be passed to the context factory
+      const dialogId = this.idCounter++;
+
+      // Guard to ensure the promise resolves only once, since onClose always fires (even after explicit close)
+      const safeResolve = (value: T) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(value);
+        this.close(dialogId);
+      };
+
+      const { showOptions, fallback } = createContextAndOptions(
+        safeResolve,
+        dialogId,
+      );
+
+      this.show({
+        ...showOptions,
+        id: dialogId,
+        onClose: () => {
+          showOptions.onClose?.();
+          safeResolve(fallback ?? defaultDismissValue);
+        },
+        closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
+      });
+    });
+  }
+
+  // ===========================================================================
+  // Async Prompt Methods
+  // ===========================================================================
 
   /**
    * Show a generic prompt dialog and wait for a response.
@@ -373,50 +434,30 @@ export class DialogManager {
       | PromptOptions<T>
       | ((ctx: PromptContext<T>) => AsyncShowOptions<T | undefined>),
   ): Promise<T | undefined> {
-    const dialogId = this.idCounter++;
-    const { promise, resolve } = this.createAsyncResolver<T | undefined>(
-      dialogId,
-    );
+    return this.showAsyncDialog<T | undefined>((safeResolve, dialogId) => {
+      const ctx: PromptContext<T> = {
+        resolve: safeResolve,
+        dismiss: () => safeResolve(undefined),
+        dialogId,
+      };
 
-    const ctx: PromptContext<T> = {
-      resolve,
-      dismiss: () => resolve(undefined),
-      dialogId,
-    };
+      if (typeof input === "function") {
+        const result = input(ctx);
+        return { showOptions: result, fallback: result.fallback };
+      }
 
-    let showOptions: AsyncShowOptions<T | undefined>;
-    if (typeof input === "function") {
-      showOptions = input(ctx);
-    } else {
-      const { content, fallback, ...rest } = input;
-      showOptions = {
-        ...rest,
-        content: (renderCtx: RenderContext) => content(renderCtx, ctx),
+      const { fallback, ...rest } = input;
+      return {
+        showOptions: this.buildShowOptions(rest, ctx),
         fallback,
       };
-    }
-
-    const fallback = showOptions.fallback ?? undefined;
-    this.show({
-      ...showOptions,
-      id: dialogId,
-      onClose: () => {
-        try {
-          showOptions.onClose?.();
-        } finally {
-          resolve(fallback);
-        }
-      },
-      closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
-    });
-
-    return promise;
+    }, undefined);
   }
 
   /**
    * Show a confirmation dialog and wait for the user to confirm or cancel.
    *
-   * @returns `true` if confirmed, `false` if cancelled or dismissed (unless fallback specified).
+   * @returns `true` if confirmed, `false` if cancelled or dismissed.
    *
    * Accepts either ConfirmOptions (for imperative usage) or a factory function
    * that receives the confirm context and returns AsyncShowOptions (for framework adapters).
@@ -453,41 +494,14 @@ export class DialogManager {
       | ConfirmOptions
       | ((ctx: ConfirmContext) => AsyncShowOptions<boolean>),
   ): Promise<boolean> {
-    const dialogId = this.idCounter++;
-    const { promise, resolve } = this.createAsyncResolver<boolean>(dialogId);
-
-    const ctx: ConfirmContext = {
-      resolve,
-      dialogId,
-    };
-
-    let showOptions: AsyncShowOptions<boolean>;
-    if (typeof input === "function") {
-      showOptions = input(ctx);
-    } else {
-      const { content, fallback, ...rest } = input;
-      showOptions = {
-        ...rest,
-        content: (renderCtx: RenderContext) => content(renderCtx, ctx),
-        fallback,
+    return this.showAsyncDialog<boolean>((safeResolve, dialogId) => {
+      const ctx: ConfirmContext = {
+        resolve: safeResolve,
+        dismiss: () => safeResolve(false),
+        dialogId,
       };
-    }
-
-    const fallback = showOptions.fallback ?? false;
-    this.show({
-      ...showOptions,
-      id: dialogId,
-      onClose: () => {
-        try {
-          showOptions.onClose?.();
-        } finally {
-          resolve(fallback);
-        }
-      },
-      closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
-    });
-
-    return promise;
+      return { showOptions: this.buildShowOptions(input, ctx) };
+    }, false);
   }
 
   /**
@@ -519,46 +533,20 @@ export class DialogManager {
   alert(
     input: AlertOptions | ((ctx: AlertContext) => DialogShowOptions),
   ): Promise<void> {
-    const dialogId = this.idCounter++;
-    const { promise, resolve } = this.createAsyncResolver<void>(dialogId);
-
-    const ctx: AlertContext = {
-      dismiss: resolve,
-      dialogId,
-    };
-
-    let showOptions: DialogShowOptions;
-    if (typeof input === "function") {
-      showOptions = input(ctx);
-    } else {
-      const { content, ...rest } = input;
-      showOptions = {
-        ...rest,
-        content: (renderCtx: RenderContext) => content(renderCtx, ctx),
+    return this.showAsyncDialog<void>((safeResolve, dialogId) => {
+      const ctx: AlertContext = {
+        dismiss: safeResolve,
+        dialogId,
       };
-    }
-
-    this.show({
-      ...showOptions,
-      id: dialogId,
-      onClose: () => {
-        try {
-          showOptions.onClose?.();
-        } finally {
-          resolve(undefined);
-        }
-      },
-      closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
-    });
-
-    return promise;
+      return { showOptions: this.buildShowOptions(input, ctx) };
+    }, undefined);
   }
 
   /**
    * Show a choice dialog and wait for the user to select an option.
    *
    * @template K The type of keys for the available choices.
-   * @returns The selected key, or `undefined` if cancelled or dismissed (unless fallback specified).
+   * @returns The selected key, or `undefined` if cancelled or dismissed.
    *
    * Accepts either ChoiceOptions (for imperative usage) or a factory function
    * that receives the choice context and returns AsyncShowOptions (for framework adapters).
@@ -597,44 +585,14 @@ export class DialogManager {
       | ChoiceOptions<K>
       | ((ctx: ChoiceContext<K>) => AsyncShowOptions<K | undefined>),
   ): Promise<K | undefined> {
-    const dialogId = this.idCounter++;
-    const { promise, resolve } = this.createAsyncResolver<K | undefined>(
-      dialogId,
-    );
-
-    const ctx: ChoiceContext<K> = {
-      resolve,
-      dismiss: () => resolve(undefined),
-      dialogId,
-    };
-
-    let showOptions: AsyncShowOptions<K | undefined>;
-    if (typeof input === "function") {
-      showOptions = input(ctx);
-    } else {
-      const { content, fallback, ...rest } = input;
-      showOptions = {
-        ...rest,
-        content: (renderCtx: RenderContext) => content(renderCtx, ctx),
-        fallback,
+    return this.showAsyncDialog<K | undefined>((safeResolve, dialogId) => {
+      const ctx: ChoiceContext<K> = {
+        resolve: safeResolve,
+        dismiss: () => safeResolve(undefined),
+        dialogId,
       };
-    }
-
-    const fallback = showOptions.fallback ?? undefined;
-    this.show({
-      ...showOptions,
-      id: dialogId,
-      onClose: () => {
-        try {
-          showOptions.onClose?.();
-        } finally {
-          resolve(fallback);
-        }
-      },
-      closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
-    });
-
-    return promise;
+      return { showOptions: this.buildShowOptions(input, ctx) };
+    }, undefined);
   }
 
   /** Destroy the manager and clean up resources. */

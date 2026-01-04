@@ -52,6 +52,8 @@ export interface PromptContext<T> {
 export interface ConfirmContext {
   /** Resolves the Promise with the given boolean and closes the dialog. */
   resolve: (confirmed: boolean) => void;
+  /** Dismisses the dialog without confirmation. Resolves Promise with `false`. */
+  dismiss: () => void;
   /** The unique ID of this dialog. Use with `useDialogKeyboard` for scoped keyboard handling. */
   dialogId: DialogId;
 }
