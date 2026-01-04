@@ -111,6 +111,8 @@ export interface BasePromptOptions<T, TContent> extends AsyncDialogOptions {
 export interface BaseConfirmOptions<TContent> extends AsyncDialogOptions {
   /** Content factory that receives the confirm context. */
   content: TContent;
+  /** Fallback value when dialog is dismissed via ESC or backdrop click. @default false */
+  fallback?: boolean;
 }
 
 /**
@@ -125,10 +127,14 @@ export interface BaseAlertOptions<TContent> extends AsyncDialogOptions {
 /**
  * Generic base for choice dialog options.
  * @template TContent The content type (varies by adapter).
+ * @template K The type of keys for the available choices.
  */
-export interface BaseChoiceOptions<TContent> extends AsyncDialogOptions {
+export interface BaseChoiceOptions<TContent, K extends string = string>
+  extends AsyncDialogOptions {
   /** Content factory that receives the choice context. */
   content: TContent;
+  /** Fallback value when dialog is dismissed via ESC or backdrop click. @default undefined */
+  fallback?: K;
 }
 
 /**

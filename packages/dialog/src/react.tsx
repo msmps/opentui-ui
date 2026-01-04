@@ -99,7 +99,7 @@ export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
  * @template K The type of keys for the available choices.
  */
 export interface ChoiceOptions<K extends string>
-  extends BaseChoiceOptions<ChoiceContent<K>> {}
+  extends BaseChoiceOptions<ChoiceContent<K>, K> {}
 
 /**
  * Dialog actions for showing, closing, and managing dialogs.
@@ -235,8 +235,11 @@ export function useDialog(): DialogActions {
       },
 
       confirm: (options: ConfirmOptions): Promise<boolean> => {
-        const { content, ...rest } = options;
-        return manager.confirm((ctx) => buildShowOptions(content, rest, ctx));
+        const { content, fallback, ...rest } = options;
+        return manager.confirm((ctx) => ({
+          ...buildShowOptions(content, rest, ctx),
+          fallback,
+        }));
       },
 
       alert: (options: AlertOptions): Promise<void> => {
@@ -247,8 +250,11 @@ export function useDialog(): DialogActions {
       choice: <K extends string>(
         options: ChoiceOptions<K>,
       ): Promise<K | undefined> => {
-        const { content, ...rest } = options;
-        return manager.choice<K>((ctx) => buildShowOptions(content, rest, ctx));
+        const { content, fallback, ...rest } = options;
+        return manager.choice<K>((ctx) => ({
+          ...buildShowOptions(content, rest, ctx),
+          fallback,
+        }));
       },
     }),
     [manager],
