@@ -440,7 +440,6 @@ export type {
 } from "./prompts";
 export { type DialogTheme, themes } from "./themes";
 export type {
-  DialogBackdropMode,
   DialogContainerOptions,
   DialogId,
   DialogSize,

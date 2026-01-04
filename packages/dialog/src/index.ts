@@ -28,7 +28,6 @@ export type {
   BaseDialogActions,
   BasePromptOptions,
   Dialog,
-  DialogBackdropMode,
   DialogContainerOptions,
   DialogId,
   DialogShowOptions,

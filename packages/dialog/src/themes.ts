@@ -20,7 +20,6 @@ export const DEFAULT_PADDING = { top: 1, right: 1, bottom: 1, left: 1 };
 export const minimal: DialogTheme = {
   name: "Minimal",
   description: "Clean and unobtrusive, lighter backdrop, no borders (default)",
-  backdropMode: "top-only",
   dialogOptions: {
     style: DEFAULT_STYLE,
   },
@@ -30,7 +29,6 @@ export const unstyled: DialogTheme = {
   name: "Unstyled",
   description: "No default styles - full control for custom implementations",
   unstyled: true,
-  backdropMode: "top-only",
   dialogOptions: {
     unstyled: true,
     style: {

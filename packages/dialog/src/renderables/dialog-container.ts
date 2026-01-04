@@ -1,5 +1,5 @@
 import { BoxRenderable, type RenderContext } from "@opentui/core";
-
+import { mergeStyles } from "@opentui-ui/utils";
 import { DIALOG_Z_INDEX } from "../constants";
 import type { DialogManager } from "../manager";
 import type {
@@ -10,6 +10,7 @@ import type {
   DialogSize,
 } from "../types";
 import { isDialogToClose } from "../types";
+import { BackdropRenderable } from "./backdrop";
 import { DialogRenderable } from "./dialog";
 
 export interface DialogContainerRenderableOptions
@@ -38,6 +39,7 @@ export class DialogContainerRenderable extends BoxRenderable {
   private _manager: DialogManager;
   private _options: DialogContainerOptions;
   private _dialogRenderables: Map<DialogId, DialogRenderable> = new Map();
+  private _backdrop: BackdropRenderable;
   private _unsubscribe: (() => void) | null = null;
   private _destroyed: boolean = false;
 
@@ -55,6 +57,14 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._manager = options.manager;
     const { manager: _, ...containerOptions } = options;
     this._options = containerOptions;
+
+    // Create the single container-level backdrop
+    this._backdrop = new BackdropRenderable(ctx, {
+      style: this._options.dialogOptions?.style,
+      visible: false,
+      onClick: () => this.handleBackdropClick(),
+    });
+    this.add(this._backdrop);
 
     this._ctx.keyInput.on("keypress", this.handleKeyboard);
 
@@ -96,6 +106,19 @@ export class DialogContainerRenderable extends BoxRenderable {
     return false;
   };
 
+  private handleBackdropClick(): void {
+    const topDialog = this.getTopDialogRenderable();
+    if (!topDialog) return;
+
+    // Call the dialog's onBackdropClick handler if present
+    topDialog.dialog.onBackdropClick?.();
+
+    // Close if closeOnClickOutside is enabled
+    if (topDialog.dialog.closeOnClickOutside === true) {
+      this._manager.close(topDialog.dialog.id);
+    }
+  }
+
   private getTopDialogRenderable(): DialogRenderable | undefined {
     if (this._dialogRenderables.size === 0) {
       return undefined;
@@ -122,58 +145,43 @@ export class DialogContainerRenderable extends BoxRenderable {
       this.removeDialog(dialog.id);
     }
 
-    const isTopmost = this.isTopmostDialog(dialog.id);
-
     const dialogRenderable = new DialogRenderable(this.ctx, {
       dialog,
       containerOptions: this._options,
-      isTopmost,
       onRemove: (d) => this.handleDialogRemoved(d),
-      onBackdropClick: () => this._manager.close(dialog.id),
-      onReveal: () => this.updateTopmostStates(),
     });
 
     this._dialogRenderables.set(dialog.id, dialogRenderable);
     this.add(dialogRenderable);
 
-    this.updateTopmostStates();
+    this.updateBackdrop();
     this.requestRender();
   }
 
-  private isTopmostDialog(dialogId: DialogId): boolean {
+  /**
+   * Update the container backdrop visibility and style.
+   * Backdrop is visible when any dialog is open.
+   * Style is determined by topmost dialog's style, falling back to container defaults.
+   */
+  private updateBackdrop(): void {
     const dialogs = this._manager.getDialogs();
-    if (dialogs.length === 0) return true;
-    return dialogs[dialogs.length - 1]?.id === dialogId;
-  }
+    const hasDialogs = dialogs.length > 0;
 
-  private updateTopmostStates(): void {
-    const dialogs = this._manager.getDialogs();
-    if (dialogs.length === 0) return;
+    this._backdrop.visible = hasDialogs;
 
-    const topmostId = dialogs[dialogs.length - 1]?.id;
-    const topmostRenderable = topmostId
-      ? this._dialogRenderables.get(topmostId)
-      : undefined;
+    if (hasDialogs) {
+      const topDialog = dialogs[dialogs.length - 1];
 
-    // Determine effective backdrop mode
-    const backdropMode =
-      this._options.dialogOptions?.backdropMode ??
-      this._options.backdropMode ??
-      "top-only";
+      // Dialog style takes priority, falls back to container defaults
+      const style = mergeStyles(
+        this._options.dialogOptions?.style,
+        topDialog?.style,
+      );
 
-    // In "top-only" mode, if the topmost dialog isn't revealed yet (deferred),
-    // keep the previous dialog's backdrop to prevent flash during portal mounting
-    if (
-      backdropMode === "top-only" &&
-      topmostRenderable &&
-      !topmostRenderable.isRevealed
-    ) {
-      return;
+      this._backdrop.updateStyle(style);
     }
 
-    for (const [id, renderable] of this._dialogRenderables) {
-      renderable.setIsTopmost(id === topmostId);
-    }
+    this._backdrop.requestRender();
   }
 
   private removeDialog(id: DialogId): void {
@@ -189,12 +197,16 @@ export class DialogContainerRenderable extends BoxRenderable {
       this._dialogRenderables.delete(dialog.id);
       this.remove(renderable.id);
       renderable.destroy();
-      this.updateTopmostStates();
+      this.updateBackdrop();
       this.requestRender();
     }
   }
 
-  public updateDimensions(width: number): void {
+  public updateDimensions(width: number, height?: number): void {
+    // Update backdrop dimensions
+    this._backdrop.updateDimensions(width, height ?? this._ctx.height);
+
+    // Update dialog dimensions
     for (const [, renderable] of this._dialogRenderables) {
       renderable.updateDimensions(width);
     }
@@ -206,6 +218,8 @@ export class DialogContainerRenderable extends BoxRenderable {
 
   public set dialogOptions(value: DialogOptions) {
     this._options.dialogOptions = value;
+    // Update backdrop style when options change
+    this.updateBackdrop();
   }
 
   public set sizePresets(value: Partial<Record<DialogSize, number>>) {
@@ -224,6 +238,8 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._unsubscribe = null;
 
     this._ctx.keyInput.off("keypress", this.handleKeyboard);
+
+    this._backdrop.destroy();
 
     for (const [, renderable] of this._dialogRenderables) {
       renderable.destroy();
