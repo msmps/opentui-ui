@@ -26,24 +26,6 @@ export const minimal: DialogTheme = {
   },
 };
 
-export const classic: DialogTheme = {
-  name: "Classic",
-  description: "Traditional dialog style with heavier backdrop",
-  backdropMode: "per-dialog",
-  dialogOptions: {
-    style: {
-      backdropOpacity: 0.59,
-      backdropColor: "#000000",
-      backgroundColor: "#1a1a1a",
-      border: false,
-      paddingTop: 1,
-      paddingRight: 2,
-      paddingBottom: 1,
-      paddingLeft: 2,
-    },
-  },
-};
-
 export const unstyled: DialogTheme = {
   name: "Unstyled",
   description: "No default styles - full control for custom implementations",
@@ -63,29 +45,7 @@ export const unstyled: DialogTheme = {
   },
 };
 
-export const danger: DialogTheme = {
-  name: "Danger",
-  description: "Red-accented for destructive actions",
-  backdropMode: "top-only",
-  dialogOptions: {
-    style: {
-      backdropOpacity: 0.65,
-      backdropColor: "#1a0000",
-      backgroundColor: "#1a1a1a",
-      border: true,
-      borderColor: "#b91c1c",
-      borderStyle: "single",
-      paddingTop: 1,
-      paddingRight: 2,
-      paddingBottom: 1,
-      paddingLeft: 2,
-    },
-  },
-};
-
 export const themes = {
   minimal,
-  classic,
   unstyled,
-  danger,
 } as const;

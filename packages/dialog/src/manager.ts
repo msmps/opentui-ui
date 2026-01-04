@@ -1,5 +1,16 @@
 import type { Renderable, RenderContext } from "@opentui/core";
 import type {
+  AlertContext,
+  ChoiceContext,
+  ConfirmContext,
+  PromptContext,
+} from "./prompts";
+import type {
+  AsyncDialogOptions,
+  BaseAlertOptions,
+  BaseChoiceOptions,
+  BaseConfirmOptions,
+  BasePromptOptions,
   Dialog,
   DialogId,
   DialogShowOptions,
@@ -7,6 +18,69 @@ import type {
 } from "./types";
 
 type DialogSubscriber = (data: Dialog | DialogToClose) => void;
+
+// ============================================================================
+// Core Prompt Types (for imperative/non-framework usage)
+// ============================================================================
+// These extend the generic base types with core-specific content signatures.
+// Core content functions receive both the context and RenderContext.
+
+/** Content factory for prompt dialogs. */
+type PromptContent<T> = (
+  renderCtx: RenderContext,
+  promptCtx: PromptContext<T>,
+) => Renderable;
+
+/** Content factory for confirm dialogs. */
+type ConfirmContent = (
+  renderCtx: RenderContext,
+  confirmCtx: ConfirmContext,
+) => Renderable;
+
+/** Content factory for alert dialogs. */
+type AlertContent = (
+  renderCtx: RenderContext,
+  alertCtx: AlertContext,
+) => Renderable;
+
+/** Content factory for choice dialogs. */
+type ChoiceContent<K extends string> = (
+  renderCtx: RenderContext,
+  choiceCtx: ChoiceContext<K>,
+) => Renderable;
+
+/**
+ * Options for a generic prompt dialog using core renderables.
+ * @template T The type of value the prompt resolves to.
+ */
+export interface PromptOptions<T>
+  extends BasePromptOptions<T, PromptContent<T>> {}
+
+/**
+ * Options for a confirm dialog using core renderables.
+ */
+export interface ConfirmOptions extends BaseConfirmOptions<ConfirmContent> {}
+
+/**
+ * Options for an alert dialog using core renderables.
+ */
+export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
+
+/**
+ * Options for a choice dialog using core renderables.
+ * @template K The type of keys for the available choices.
+ */
+export interface ChoiceOptions<K extends string>
+  extends BaseChoiceOptions<ChoiceContent<K>> {}
+
+/**
+ * Extended DialogShowOptions for async dialog factory functions.
+ * @template T The type of value returned on dismiss.
+ */
+export interface PromptShowOptions<T> extends DialogShowOptions {
+  /** Fallback value when dialog is dismissed via ESC or backdrop click. */
+  fallback?: T;
+}
 
 /**
  * Manages dialog state and lifecycle for a DialogContainerRenderable.
@@ -162,7 +236,7 @@ export class DialogManager {
       const dialog: Dialog = {
         ...options,
         id,
-        closeOnClickOutside: options.closeOnClickOutside ?? true,
+        closeOnClickOutside: options.closeOnClickOutside ?? false,
       };
       this.addDialog(dialog);
       dialog.onOpen?.();
@@ -245,6 +319,275 @@ export class DialogManager {
   /** Check if any dialogs are open. */
   isOpen(): boolean {
     return this.dialogs.length > 0;
+  }
+
+  // ===========================================================================
+  // Async Dialog Helpers
+  // ===========================================================================
+
+  /**
+   * Builds DialogShowOptions from either a factory function or a CoreOptions object.
+   * Used by confirm, alert, and choice methods to reduce duplication.
+   */
+  private buildShowOptions<
+    TCtx,
+    TOptions extends AsyncDialogOptions & {
+      content: (renderCtx: RenderContext, ctx: TCtx) => Renderable;
+    },
+  >(
+    input: TOptions | ((ctx: TCtx) => DialogShowOptions),
+    ctx: TCtx,
+  ): DialogShowOptions {
+    if (typeof input === "function") {
+      return input(ctx);
+    }
+    const { content, ...rest } = input;
+    return {
+      ...rest,
+      content: (renderCtx: RenderContext) => content(renderCtx, ctx),
+    };
+  }
+
+  /**
+   * Internal helper that handles common async dialog logic:
+   * - Promise creation
+   * - Safe double-resolve protection
+   * - Dialog show/close lifecycle
+   * - Fallback value handling for ESC/backdrop dismissal
+   */
+  private showAsyncDialog<T>(
+    createContextAndOptions: (
+      safeResolve: (value: T) => void,
+      dialogId: DialogId,
+    ) => {
+      showOptions: DialogShowOptions;
+      fallback?: T;
+    },
+    defaultDismissValue: T,
+  ): Promise<T> {
+    return new Promise<T>((resolve) => {
+      let resolved = false;
+
+      // Pre-generate the dialog ID so it can be passed to the context factory
+      const dialogId = this.idCounter++;
+
+      // Guard to ensure the promise resolves only once, since onClose always fires (even after explicit close)
+      const safeResolve = (value: T) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(value);
+        this.close(dialogId);
+      };
+
+      const { showOptions, fallback } = createContextAndOptions(
+        safeResolve,
+        dialogId,
+      );
+
+      this.show({
+        ...showOptions,
+        id: dialogId,
+        onClose: () => {
+          showOptions.onClose?.();
+          safeResolve(fallback ?? defaultDismissValue);
+        },
+        closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
+      });
+    });
+  }
+
+  // ===========================================================================
+  // Async Prompt Methods
+  // ===========================================================================
+
+  /**
+   * Show a generic prompt dialog and wait for a response.
+   *
+   * @template T The type of value the prompt resolves to.
+   *
+   * Accepts either PromptOptions (for imperative usage) or a factory function
+   * that receives the prompt context and returns PromptShowOptions (for framework adapters).
+   *
+   * @example
+   * ```ts
+   * // Core/imperative usage
+   * const result = await manager.prompt<string>({
+   *   content: (renderCtx, { resolve, dismiss }) => {
+   *     const box = new BoxRenderable(renderCtx, { flexDirection: "row" });
+   *     const cancelBtn = new TextRenderable(renderCtx, { content: "Cancel" });
+   *     cancelBtn.on("mouseUp", dismiss);
+   *     const okBtn = new TextRenderable(renderCtx, { content: "OK" });
+   *     okBtn.on("mouseUp", () => resolve("some-value"));
+   *     box.add(cancelBtn);
+   *     box.add(okBtn);
+   *     return box;
+   *   },
+   * });
+   * ```
+   */
+  prompt<T>(options: PromptOptions<T>): Promise<T | undefined>;
+  prompt<T>(
+    showFactory: (ctx: PromptContext<T>) => PromptShowOptions<T | undefined>,
+  ): Promise<T | undefined>;
+  prompt<T>(
+    input:
+      | PromptOptions<T>
+      | ((ctx: PromptContext<T>) => PromptShowOptions<T | undefined>),
+  ): Promise<T | undefined> {
+    return this.showAsyncDialog<T | undefined>((safeResolve, dialogId) => {
+      const ctx: PromptContext<T> = {
+        resolve: safeResolve,
+        dismiss: () => safeResolve(undefined),
+        dialogId,
+      };
+
+      if (typeof input === "function") {
+        const result = input(ctx);
+        return { showOptions: result, fallback: result.fallback };
+      }
+
+      const { fallback, ...rest } = input;
+      return {
+        showOptions: this.buildShowOptions(rest, ctx),
+        fallback,
+      };
+    }, undefined);
+  }
+
+  /**
+   * Show a confirmation dialog and wait for the user to confirm or cancel.
+   *
+   * @returns `true` if confirmed, `false` if cancelled or dismissed.
+   *
+   * Accepts either ConfirmOptions (for imperative usage) or a factory function
+   * that receives the confirm context and returns DialogShowOptions (for framework adapters).
+   *
+   * @example
+   * ```ts
+   * // Core/imperative usage
+   * const confirmed = await manager.confirm({
+   *   content: (renderCtx, { resolve }) => {
+   *     const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+   *     const title = new TextRenderable(renderCtx, { content: "Delete file?" });
+   *     box.add(title);
+   *
+   *     const buttons = new BoxRenderable(renderCtx, { flexDirection: "row" });
+   *     const cancelBtn = new TextRenderable(renderCtx, { content: "Cancel" });
+   *     cancelBtn.on("mouseUp", () => resolve(false));
+   *     const confirmBtn = new TextRenderable(renderCtx, { content: "Confirm" });
+   *     confirmBtn.on("mouseUp", () => resolve(true));
+   *     buttons.add(cancelBtn);
+   *     buttons.add(confirmBtn);
+   *     box.add(buttons);
+   *
+   *     return box;
+   *   }
+   * });
+   * ```
+   */
+  confirm(options: ConfirmOptions): Promise<boolean>;
+  confirm(
+    showFactory: (ctx: ConfirmContext) => DialogShowOptions,
+  ): Promise<boolean>;
+  confirm(
+    input: ConfirmOptions | ((ctx: ConfirmContext) => DialogShowOptions),
+  ): Promise<boolean> {
+    return this.showAsyncDialog<boolean>((safeResolve, dialogId) => {
+      const ctx: ConfirmContext = {
+        resolve: safeResolve,
+        dialogId,
+      };
+      return { showOptions: this.buildShowOptions(input, ctx) };
+    }, false);
+  }
+
+  /**
+   * Show an alert dialog and wait for the user to dismiss it.
+   *
+   * Accepts either AlertOptions (for imperative usage) or a factory function
+   * that receives the alert context and returns DialogShowOptions (for framework adapters).
+   *
+   * @example
+   * ```ts
+   * // Core/imperative usage
+   * await manager.alert({
+   *   content: (renderCtx, { dismiss }) => {
+   *     const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+   *     const text = new TextRenderable(renderCtx, { content: "Operation complete!" });
+   *     box.add(text);
+   *
+   *     const okBtn = new TextRenderable(renderCtx, { content: "OK" });
+   *     okBtn.on("mouseUp", dismiss);
+   *     box.add(okBtn);
+   *
+   *     return box;
+   *   }
+   * });
+   * ```
+   */
+  alert(options: AlertOptions): Promise<void>;
+  alert(showFactory: (ctx: AlertContext) => DialogShowOptions): Promise<void>;
+  alert(
+    input: AlertOptions | ((ctx: AlertContext) => DialogShowOptions),
+  ): Promise<void> {
+    return this.showAsyncDialog<void>((safeResolve, dialogId) => {
+      const ctx: AlertContext = {
+        dismiss: safeResolve,
+        dialogId,
+      };
+      return { showOptions: this.buildShowOptions(input, ctx) };
+    }, undefined);
+  }
+
+  /**
+   * Show a choice dialog and wait for the user to select an option.
+   *
+   * @template K The type of keys for the available choices.
+   * @returns The selected key, or `undefined` if cancelled or dismissed.
+   *
+   * Accepts either ChoiceOptions (for imperative usage) or a factory function
+   * that receives the choice context and returns DialogShowOptions (for framework adapters).
+   *
+   * @example
+   * ```ts
+   * // Core/imperative usage
+   * const action = await manager.choice<"save" | "discard">({
+   *   content: (renderCtx, { resolve, dismiss }) => {
+   *     const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+   *     const title = new TextRenderable(renderCtx, { content: "Unsaved changes" });
+   *     box.add(title);
+   *
+   *     const saveBtn = new TextRenderable(renderCtx, { content: "Save" });
+   *     saveBtn.on("mouseUp", () => resolve("save"));
+   *     const discardBtn = new TextRenderable(renderCtx, { content: "Discard" });
+   *     discardBtn.on("mouseUp", () => resolve("discard"));
+   *     const cancelBtn = new TextRenderable(renderCtx, { content: "Cancel" });
+   *     cancelBtn.on("mouseUp", dismiss);
+   *
+   *     box.add(saveBtn);
+   *     box.add(discardBtn);
+   *     box.add(cancelBtn);
+   *
+   *     return box;
+   *   }
+   * });
+   * ```
+   */
+  choice<K extends string>(options: ChoiceOptions<K>): Promise<K | undefined>;
+  choice<K extends string>(
+    showFactory: (ctx: ChoiceContext<K>) => DialogShowOptions,
+  ): Promise<K | undefined>;
+  choice<K extends string>(
+    input: ChoiceOptions<K> | ((ctx: ChoiceContext<K>) => DialogShowOptions),
+  ): Promise<K | undefined> {
+    return this.showAsyncDialog<K | undefined>((safeResolve, dialogId) => {
+      const ctx: ChoiceContext<K> = {
+        resolve: safeResolve,
+        dismiss: () => safeResolve(undefined),
+        dialogId,
+      };
+      return { showOptions: this.buildShowOptions(input, ctx) };
+    }, undefined);
   }
 
   /** Destroy the manager and clean up resources. */

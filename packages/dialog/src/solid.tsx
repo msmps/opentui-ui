@@ -1,9 +1,14 @@
 /** @jsxImportSource @opentui/solid */
 
-import { BoxRenderable, type RenderContext } from "@opentui/core";
+import {
+  BoxRenderable,
+  type KeyEvent,
+  type RenderContext,
+} from "@opentui/core";
 import {
   createComponent,
   Portal,
+  useKeyboard,
   useRenderer,
   useTerminalDimensions,
 } from "@opentui/solid";
@@ -21,8 +26,20 @@ import {
 } from "solid-js";
 import { JSX_CONTENT_KEY } from "./constants";
 import { DialogManager } from "./manager";
+import type {
+  AlertContext,
+  ChoiceContext,
+  ConfirmContext,
+  DialogState,
+  PromptContext,
+} from "./prompts";
 import { DialogContainerRenderable } from "./renderables";
 import type {
+  BaseAlertOptions,
+  BaseChoiceOptions,
+  BaseConfirmOptions,
+  BaseDialogActions,
+  BasePromptOptions,
   Dialog,
   DialogContainerOptions,
   DialogId,
@@ -37,44 +54,80 @@ interface DialogWithJsx extends Dialog {
   [JSX_CONTENT_KEY]?: ContentAccessor;
 }
 
+/** Internal type for show options that include JSX bridging keys */
+interface DialogShowOptionsWithJsx extends DialogShowOptions {
+  [JSX_CONTENT_KEY]?: ContentAccessor;
+}
+
 interface PortalItem {
   id: string | number;
   contentAccessor: ContentAccessor;
   mount: BoxRenderable;
 }
 
-export interface SolidDialogShowOptions
-  extends Omit<DialogShowOptions, "content"> {
+export interface ShowOptions extends Omit<DialogShowOptions, "content"> {
   /** Must be a function returning JSX: `() => <text>Hi</text>` */
   content: ContentAccessor;
 }
 
+// ============================================================================
+// Solid Prompt Types
+// ============================================================================
+// These extend the generic base types with Solid-specific content signatures.
+
+/** Content factory for prompt dialogs. */
+type PromptContent<T> = (ctx: PromptContext<T>) => ContentAccessor;
+
+/** Content factory for confirm dialogs. */
+type ConfirmContent = (ctx: ConfirmContext) => ContentAccessor;
+
+/** Content factory for alert dialogs. */
+type AlertContent = (ctx: AlertContext) => ContentAccessor;
+
+/** Content factory for choice dialogs. */
+type ChoiceContent<K extends string> = (
+  ctx: ChoiceContext<K>,
+) => ContentAccessor;
+
 /**
- * Dialog state available via useDialogState selector.
+ * Options for a generic prompt dialog.
+ * @template T The type of value the prompt resolves to.
  */
-export interface DialogState {
-  /** Whether any dialog is currently open. */
-  isOpen: boolean;
-  /** Array of all active dialogs (oldest first). */
-  dialogs: readonly Dialog[];
-  /** The top-most (most recent) dialog, or undefined if none. */
-  topDialog: Dialog | undefined;
-  /** Number of currently open dialogs. */
-  count: number;
-}
+export interface PromptOptions<T>
+  extends BasePromptOptions<T, PromptContent<T>> {}
+
+/**
+ * Options for a confirm dialog.
+ */
+export interface ConfirmOptions extends BaseConfirmOptions<ConfirmContent> {}
+
+/**
+ * Options for an alert dialog.
+ */
+export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
+
+/**
+ * Options for a choice dialog.
+ * @template K The type of keys for the available choices.
+ */
+export interface ChoiceOptions<K extends string>
+  extends BaseChoiceOptions<ChoiceContent<K>> {}
 
 /**
  * Dialog actions for showing, closing, and managing dialogs.
+ * Extends BaseDialogActions with async prompt methods.
  */
-export interface DialogActions {
-  /** Show a new dialog and return its ID. */
-  show: (options: SolidDialogShowOptions) => DialogId;
-  /** Close a specific dialog by ID, or the top-most dialog if no ID provided. */
-  close: (id?: DialogId) => DialogId | undefined;
-  /** Close all open dialogs. */
-  closeAll: () => void;
-  /** Close all dialogs and show a new one. */
-  replace: (options: SolidDialogShowOptions) => DialogId;
+export interface DialogActions extends BaseDialogActions<ShowOptions> {
+  /** Show a generic prompt dialog and wait for a response. */
+  prompt: <T>(options: PromptOptions<T>) => Promise<T | undefined>;
+  /** Show a confirmation dialog and wait for the user to confirm or cancel. */
+  confirm: (options: ConfirmOptions) => Promise<boolean>;
+  /** Show an alert dialog and wait for the user to dismiss it. */
+  alert: (options: AlertOptions) => Promise<void>;
+  /** Show a choice dialog and wait for the user to select an option. */
+  choice: <K extends string>(
+    options: ChoiceOptions<K>,
+  ) => Promise<K | undefined>;
 }
 
 interface DialogContextValue {
@@ -86,6 +139,43 @@ const DialogContext = createContext<DialogContextValue>();
 
 const createPlaceholderContent = () => (ctx: RenderContext) =>
   new BoxRenderable(ctx, { id: "~jsx-placeholder" });
+
+/**
+ * Helper to build dialog show options for Solid adapter.
+ * Handles both direct show/replace calls and async prompt methods.
+ * Includes validation for ContentAccessor.
+ *
+ * @param content - ContentAccessor or (ctx) => ContentAccessor
+ * @param rest - Dialog options excluding content
+ * @param ctx - Optional context for async prompts (prompt, confirm, alert, choice)
+ */
+function buildShowOptions(
+  content: ContentAccessor,
+  rest: Omit<DialogShowOptions, "content">,
+): DialogShowOptionsWithJsx;
+function buildShowOptions<TCtx>(
+  content: (ctx: TCtx) => ContentAccessor,
+  rest: Omit<DialogShowOptions, "content">,
+  ctx: TCtx,
+): DialogShowOptionsWithJsx;
+function buildShowOptions(
+  content: ContentAccessor | ((...args: unknown[]) => unknown),
+  rest: Omit<DialogShowOptions, "content">,
+  ctx?: unknown,
+): DialogShowOptionsWithJsx {
+  const contentAccessor =
+    ctx !== undefined
+      ? (content as (ctx: unknown) => ContentAccessor)(ctx)
+      : (content as ContentAccessor);
+
+  validateContentAccessor(contentAccessor);
+
+  return {
+    ...rest,
+    content: createPlaceholderContent(),
+    [JSX_CONTENT_KEY]: contentAccessor,
+  } as DialogShowOptionsWithJsx;
+}
 
 function validateContentAccessor(
   content: unknown,
@@ -150,29 +240,46 @@ export function useDialog(): DialogActions {
   const { manager } = useDialogContext();
 
   return {
-    show: (options: SolidDialogShowOptions) => {
+    show: (options: ShowOptions) => {
       const { content, ...rest } = options;
-      validateContentAccessor(content);
-
-      return manager.show({
-        ...rest,
-        content: createPlaceholderContent(),
-        [JSX_CONTENT_KEY]: content,
-      } as Dialog);
+      return manager.show(buildShowOptions(content, rest));
     },
 
     close: (id?: DialogId) => manager.close(id),
     closeAll: () => manager.closeAll(),
 
-    replace: (options: SolidDialogShowOptions) => {
+    replace: (options: ShowOptions) => {
       const { content, ...rest } = options;
-      validateContentAccessor(content);
+      return manager.replace(buildShowOptions(content, rest));
+    },
 
-      return manager.replace({
-        ...rest,
-        content: createPlaceholderContent(),
-        [JSX_CONTENT_KEY]: content,
-      } as Dialog);
+    // =====================================================================
+    // Async Prompt Methods (delegate to manager with factory pattern)
+    // =====================================================================
+
+    prompt: <T,>(options: PromptOptions<T>): Promise<T | undefined> => {
+      const { content, fallback, ...rest } = options;
+      return manager.prompt<T>((ctx) => ({
+        ...buildShowOptions(content, rest, ctx),
+        fallback,
+      }));
+    },
+
+    confirm: (options: ConfirmOptions): Promise<boolean> => {
+      const { content, ...rest } = options;
+      return manager.confirm((ctx) => buildShowOptions(content, rest, ctx));
+    },
+
+    alert: (options: AlertOptions): Promise<void> => {
+      const { content, ...rest } = options;
+      return manager.alert((ctx) => buildShowOptions(content, rest, ctx));
+    },
+
+    choice: <K extends string>(
+      options: ChoiceOptions<K>,
+    ): Promise<K | undefined> => {
+      const { content, ...rest } = options;
+      return manager.choice<K>((ctx) => buildShowOptions(content, rest, ctx));
     },
   };
 }
@@ -218,6 +325,40 @@ export function useDialogState<T>(
       count: d.length,
     };
     return selector(state);
+  });
+}
+
+/**
+ * A keyboard hook for dialog content that only fires when the dialog is topmost.
+ *
+ * This prevents keyboard events from affecting stacked dialogs that are not focused.
+ * Use this instead of `useKeyboard` inside dialog content components.
+ *
+ * @param handler - Keyboard event handler (only called when dialog is topmost)
+ * @param dialogId - The dialog's ID from context (e.g., `ctx.dialogId`)
+ *
+ * @example
+ * ```tsx
+ * function DeleteConfirmDialog(props: ConfirmContext) {
+ *   useDialogKeyboard((key) => {
+ *     if (key.name === "return") props.resolve(true);
+ *     if (key.name === "escape") props.resolve(false);
+ *   }, props.dialogId);
+ *
+ *   return () => <text>Press Enter to confirm</text>;
+ * }
+ * ```
+ */
+export function useDialogKeyboard(
+  handler: (key: KeyEvent) => void | Promise<void>,
+  dialogId: DialogId,
+): void {
+  const isTopmost = useDialogState((s) => s.topDialog?.id === dialogId);
+
+  useKeyboard((key) => {
+    if (isTopmost()) {
+      handler(key);
+    }
   });
 }
 
@@ -295,10 +436,10 @@ export function DialogProvider(props: ParentProps<DialogProviderProps>) {
       if (contentAccessor !== undefined) {
         const cached = portalItemCache.get(id);
         const shouldUpdateCachedItem =
-          !cached || cached.mount !== dialogRenderable._contentBox;
+          !cached || cached.mount !== dialogRenderable.contentBox;
 
         const item: PortalItem = shouldUpdateCachedItem
-          ? { id, contentAccessor, mount: dialogRenderable._contentBox }
+          ? { id, contentAccessor, mount: dialogRenderable.contentBox }
           : cached;
 
         if (shouldUpdateCachedItem) {
@@ -354,17 +495,22 @@ export function DialogProvider(props: ParentProps<DialogProviderProps>) {
   });
 }
 
-export { DialogManager } from "./manager";
+// =============================================================================
+// Re-exports for convenience
+// =============================================================================
+
+export type {
+  AlertContext,
+  ChoiceContext,
+  ConfirmContext,
+  DialogState,
+  PromptContext,
+} from "./prompts";
 export { type DialogTheme, themes } from "./themes";
 export type {
-  Dialog,
   DialogBackdropMode,
   DialogContainerOptions,
-  DialogContentFactory,
   DialogId,
-  DialogOptions,
-  DialogShowOptions,
   DialogSize,
   DialogStyle,
-  DialogToClose,
 } from "./types";

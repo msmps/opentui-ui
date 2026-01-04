@@ -13,15 +13,41 @@
 
 ## Features
 
-- Lightweight default styling (minimal theme)
+- Lightweight default styling
 - Size presets (small, medium, large, full)
-- Click-to-close backdrop (default: enabled)
+- Click-to-close backdrop (opt-in)
 - ESC key to close
 - Dialog stack support (multiple dialogs)
 - Focus management (saves/restores focus on open/close)
-- Theme presets (minimal, classic, unstyled, danger)
+- Theme presets (minimal, unstyled)
 - Backdrop stacking modes (prevent compounded dimming)
 - React and Solid.js integrations
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Core Usage](#core-usage)
+  - [Quick Start](#quick-start)
+  - [Quick Reference](#quick-reference)
+  - [Choosing the Right Method](#choosing-the-right-method)
+  - [Async Prompts](#async-prompts)
+  - [API Reference](#api-reference)
+- [Framework Adapters (React & Solid)](#framework-adapters-react--solid)
+  - [Setup](#setup)
+  - [Choosing the Right Method](#choosing-the-right-method-1)
+  - [Async Prompts (Framework)](#async-prompts-framework)
+  - [useDialog() Hook](#usedialog-hook)
+  - [useDialogState() Hook](#usedialogstate-hook)
+  - [useDialogKeyboard() Hook](#usedialogkeyboard-hook)
+  - [Full Example](#full-example)
+- [Customization](#customization)
+  - [Default Styling](#default-styling)
+  - [Themes](#themes)
+  - [Backdrop Modes](#backdrop-modes)
+  - [Unstyled Mode](#unstyled-mode)
+  - [Size Presets](#size-presets)
+- [TypeScript](#typescript)
+- [License](#license)
 
 ## Installation
 
@@ -29,7 +55,13 @@
 bun add @opentui-ui/dialog
 ```
 
-## Quick Start
+---
+
+## Core Usage
+
+Use the core API when working directly with `@opentui/core` renderables without a framework.
+
+### Quick Start
 
 ```ts
 import { DialogContainerRenderable, DialogManager } from "@opentui-ui/dialog";
@@ -46,7 +78,7 @@ manager.show({
 });
 ```
 
-## Quick Reference
+### Quick Reference
 
 ```ts
 // Show dialogs
@@ -66,86 +98,110 @@ manager.getDialogs();   // readonly Dialog[]
 manager.getTopDialog(); // Dialog | undefined
 ```
 
-## Default Styling
+### Choosing the Right Method
 
-Out of the box, dialogs use the **minimal** theme:
+| Method | Best For | `dialogId` Available | Keyboard Handling |
+|--------|----------|---------------------|-------------------|
+| `confirm()` | Yes/No decisions | ✅ via context | ✅ `useDialogKeyboard` works |
+| `alert()` | Acknowledgments | ✅ via context | ✅ `useDialogKeyboard` works |
+| `prompt<T>()` | Getting user input | ✅ via context | ✅ `useDialogKeyboard` works |
+| `choice<K>()` | Multiple options | ✅ via context | ✅ `useDialogKeyboard` works |
+| `show()` | Non-interactive display | ❌ | ❌ Manual workarounds needed |
 
-- Lighter backdrop (35% opacity)
-- No borders
-- Tighter padding (1 cell all around)
-- `top-only` backdrop mode (only topmost dialog shows backdrop)
+**Use async methods** for any dialog requiring user interaction or keyboard handling. They provide `dialogId` in the content context, enabling proper keyboard event scoping.
 
-This provides a clean, unobtrusive appearance while still being usable immediately.
-
-## Themes
-
-Theme presets provide alternative visual styles. Import from `@opentui-ui/dialog/themes`:
+**Use `show()`** only for non-interactive dialogs that need external lifecycle control:
 
 ```ts
-import { DialogContainerRenderable, DialogManager } from "@opentui-ui/dialog";
-import { themes } from "@opentui-ui/dialog/themes";
-
-const container = new DialogContainerRenderable(renderer, {
-  manager,
-  ...themes.classic,
+// Loading dialog pattern - close from outside
+const loadingId = manager.show({
+  content: (ctx) => new TextRenderable(ctx, { content: "Loading..." }),
 });
+
+await performOperation();
+
+manager.close(loadingId);
 ```
 
-| Theme | Description |
-| ----- | ----------- |
-| `minimal` | Lighter backdrop (35%), no borders, tighter padding (default) |
-| `classic` | Traditional style with heavier backdrop (59%), wider padding |
-| `unstyled` | No backdrop, no background, no border, no padding |
-| `danger` | Red-accented border, darker backdrop for destructive actions |
+### Async Prompts
 
-Customize a theme:
+For common dialog patterns, use the built-in async methods that return Promises. Content functions receive **both** `renderCtx` and the dialog context, with `renderCtx` first to match the OpenTUI pattern:
 
 ```ts
-const container = new DialogContainerRenderable(renderer, {
-  manager,
-  ...themes.classic,
-  size: "large", // Override specific options
-});
-```
+import { BoxRenderable, TextRenderable } from "@opentui/core";
 
-## Backdrop Modes
+// Confirmation dialog - returns boolean
+const confirmed = await manager.confirm({
+  content: (renderCtx, { resolve }) => {
+    const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+    const title = new TextRenderable(renderCtx, { content: "Delete file?" });
+    box.add(title);
 
-When stacking multiple dialogs, backdrops can compound and make the screen too dark. Use `backdropMode` to control this:
+    const buttons = new BoxRenderable(renderCtx, { flexDirection: "row" });
+    const cancelBtn = new TextRenderable(renderCtx, { content: "Cancel" });
+    cancelBtn.on("mouseUp", () => resolve(false));
+    const confirmBtn = new TextRenderable(renderCtx, { content: "Confirm" });
+    confirmBtn.on("mouseUp", () => resolve(true));
+    buttons.add(cancelBtn);
+    buttons.add(confirmBtn);
+    box.add(buttons);
 
-```ts
-const container = new DialogContainerRenderable(renderer, {
-  manager,
-  backdropMode: "per-dialog", // Each dialog renders its own backdrop
-});
-```
-
-| Mode | Description |
-| ---- | ----------- |
-| `top-only` | Only the topmost dialog renders a backdrop (default) |
-| `per-dialog` | Each dialog renders its own backdrop |
-
-## Unstyled Mode
-
-For full control over dialog styling, use `unstyled: true`. This disables all default styles (backdrop, background, border, padding):
-
-```ts
-const container = new DialogContainerRenderable(renderer, {
-  manager,
-  unstyled: true,
-  dialogOptions: {
-    style: {
-      // Add your own styles
-      backgroundColor: "#262626",
-      border: true,
-      borderColor: "#525252",
-    },
+    return box;
   },
 });
+
+// Alert dialog - returns void
+await manager.alert({
+  content: (renderCtx, { dismiss }) => {
+    const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+    const text = new TextRenderable(renderCtx, { content: "Operation complete!" });
+    box.add(text);
+    const okBtn = new TextRenderable(renderCtx, { content: "OK" });
+    okBtn.on("mouseUp", dismiss);
+    box.add(okBtn);
+    return box;
+  },
+});
+
+// Choice dialog - returns selected key or undefined
+const action = await manager.choice<"save" | "discard">({
+  content: (renderCtx, { resolve, dismiss }) => {
+    const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+    // ... build UI
+    return box;
+  },
+});
+
+// Generic prompt - returns typed value or undefined
+const value = await manager.prompt<string>({
+  content: (renderCtx, { resolve, dismiss }) => {
+    const box = new BoxRenderable(renderCtx, { flexDirection: "column" });
+    // ... build UI
+    return box;
+  },
+  fallback: "default", // Optional: value when dismissed via ESC/backdrop
+});
 ```
 
-## API Reference
+#### Context Methods at a Glance
 
-### `DialogManager`
+| Method | Returns | Context Properties | Notes |
+| ------ | ------- | ------------------ | ----- |
+| `confirm()` | `Promise<boolean>` | `resolve(boolean)`, `dialogId` | `resolve(true)` = confirm, `resolve(false)` = cancel |
+| `alert()` | `Promise<void>` | `dismiss()`, `dialogId` | Just acknowledge and close |
+| `choice<K>()` | `Promise<K \| undefined>` | `resolve(key)`, `dismiss()`, `dialogId` | `dismiss()` returns `undefined` |
+| `prompt<T>()` | `Promise<T \| undefined>` | `resolve(value)`, `dismiss()`, `dialogId` | `dismiss()` returns `undefined` |
+
+> **Pattern summary:**
+> - `resolve(value)` — complete the dialog with a value
+> - `dismiss()` — close without a value (or acknowledge for alerts)
+> - `dialogId` — unique ID for this dialog
+
+> **Programmatic close:** If you need to close an async dialog externally (e.g., from a timer or external event), capture the `dialogId` from the context. Calling `manager.close(dialogId)` will close the dialog and resolve the promise with the fallback value (`undefined`, `false`, etc.) — the promise will not be left pending.
+
+### API Reference
+
+#### `DialogManager`
 
 ```typescript
 const manager = new DialogManager(renderer);
@@ -157,7 +213,7 @@ const id = manager.show({
   style?: DialogStyle,
   unstyled?: boolean,
   backdropMode?: "per-dialog" | "top-only",
-  closeOnClickOutside?: boolean, // default: true
+  closeOnClickOutside?: boolean, // default: false
   onClose?: () => void,
   onOpen?: () => void,
   onBackdropClick?: () => void,
@@ -175,6 +231,12 @@ manager.isOpen();       // boolean
 manager.getDialogs();   // readonly Dialog[]
 manager.getTopDialog(); // Dialog | undefined
 
+// Async prompt methods
+const confirmed = await manager.confirm({ content: ... });
+const value = await manager.prompt<string>({ content: ... });
+await manager.alert({ content: ... });
+const choice = await manager.choice<"a" | "b">({ content: ... });
+
 // Subscribe to changes
 const unsubscribe = manager.subscribe((data) => {
   // Called when dialogs change
@@ -184,7 +246,7 @@ const unsubscribe = manager.subscribe((data) => {
 manager.destroy();
 ```
 
-### `DialogContainerRenderable`
+#### `DialogContainerRenderable`
 
 ```typescript
 const container = new DialogContainerRenderable(renderer, {
@@ -211,7 +273,7 @@ const container = new DialogContainerRenderable(renderer, {
 renderer.root.add(container);
 ```
 
-### `DialogStyle`
+#### `DialogStyle`
 
 ```typescript
 interface DialogStyle {
@@ -242,31 +304,9 @@ interface DialogStyle {
 }
 ```
 
-## Size Presets
+---
 
-Default size presets (in terminal columns):
-
-| Size   | Width              |
-| ------ | ------------------ |
-| small  | 40                 |
-| medium | 60                 |
-| large  | 80                 |
-| full   | terminal width - 4 |
-
-Override with `sizePresets` option:
-
-```ts
-const container = new DialogContainerRenderable(renderer, {
-  manager,
-  sizePresets: {
-    small: 35,
-    medium: 55,
-    large: 75,
-  },
-});
-```
-
-## React & Solid
+## Framework Adapters (React & Solid)
 
 Both frameworks share the same API pattern with `DialogProvider`, `useDialog()`, and `useDialogState()`.
 
@@ -277,6 +317,7 @@ Both frameworks share the same API pattern with `DialogProvider`, `useDialog()`,
 import {
   DialogProvider,
   useDialog,
+  useDialogKeyboard,
   useDialogState,
 } from "@opentui-ui/dialog/react";
 
@@ -284,6 +325,7 @@ import {
 import {
   DialogProvider,
   useDialog,
+  useDialogKeyboard,
   useDialogState,
 } from "@opentui-ui/dialog/solid";
 
@@ -296,7 +338,7 @@ function App() {
 }
 ```
 
-### Using Themes with React/Solid
+#### Using Themes
 
 ```tsx
 import { DialogProvider } from "@opentui-ui/dialog/react";
@@ -304,11 +346,100 @@ import { themes } from "@opentui-ui/dialog/themes";
 
 function App() {
   return (
-    <DialogProvider {...themes.classic}>
+    <DialogProvider {...themes.minimal}>
       <MyContent />
     </DialogProvider>
   );
 }
+```
+
+### Choosing the Right Method
+
+See the [comparison table in Core Usage](#choosing-the-right-method) for when to use `show()` vs async methods.
+
+**TL;DR:** Use async methods (`confirm`, `alert`, `prompt`, `choice`) for interactive dialogs. Use `show()` only for non-interactive display (loading spinners) that need external lifecycle control:
+
+```tsx
+// Loading dialog - close from outside
+const loadingId = dialog.show({ content: () => <LoadingSpinner /> });
+await performOperation();
+dialog.close(loadingId);
+```
+
+### Async Prompts (Framework)
+
+Content functions receive only the **dialog context** (`resolve`, `dismiss`, `dialogId`) — no `renderCtx` needed:
+
+```tsx
+// Confirmation dialog - returns boolean
+const confirmed = await dialog.confirm({
+  content: (ctx) => (
+    <box flexDirection="column">
+      <text>Delete this file?</text>
+      <box flexDirection="row" gap={1}>
+        <text onMouseUp={() => ctx.resolve(false)}>Cancel</text>
+        <text onMouseUp={() => ctx.resolve(true)}>Confirm</text>
+      </box>
+    </box>
+  ),
+});
+
+// Alert dialog - returns void (just acknowledgment)
+await dialog.alert({
+  content: (ctx) => (
+    <box flexDirection="column">
+      <text>Operation complete!</text>
+      <text onMouseUp={ctx.dismiss}>OK</text>
+    </box>
+  ),
+});
+
+// Choice dialog - returns selected key or undefined
+const action = await dialog.choice<"save" | "discard">({
+  content: (ctx) => (
+    <box flexDirection="column">
+      <text>Unsaved changes</text>
+      <text onMouseUp={() => ctx.resolve("save")}>Save</text>
+      <text onMouseUp={() => ctx.resolve("discard")}>Discard</text>
+      <text onMouseUp={ctx.dismiss}>Cancel</text>
+    </box>
+  ),
+});
+
+// Generic prompt - returns typed value or undefined
+const name = await dialog.prompt<string>({
+  content: (ctx) => (
+    <box flexDirection="column">
+      <text>Enter your name:</text>
+      <input onSubmit={(value) => ctx.resolve(value)} />
+      <text onMouseUp={ctx.dismiss}>Cancel</text>
+    </box>
+  ),
+  fallback: "Anonymous", // Optional: value when dismissed via ESC/backdrop
+});
+```
+
+#### Building Custom Async Dialogs
+
+The `confirm()`, `alert()`, and `choice()` methods are convenience wrappers. For custom patterns, use `prompt<T>()` directly:
+
+```tsx
+// Example: A rating dialog that returns 1-5
+const rating = await dialog.prompt<number>({
+  content: (ctx) => (
+    <box flexDirection="column">
+      <box flexDirection="row" gap={1}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <text key={n} onMouseUp={() => ctx.resolve(n)}>
+            {n}
+          </text>
+        ))}
+      </box>
+      <text onMouseUp={ctx.dismiss}>Skip rating</text>
+    </box>
+  ),
+  fallback: 0, // Return 0 if dismissed via ESC/backdrop
+});
 ```
 
 ### `useDialog()` Hook
@@ -337,6 +468,12 @@ dialog.close();        // Close top-most
 dialog.close(id);      // Close specific
 dialog.closeAll();     // Close all
 dialog.replace({...}); // Close all and show new
+
+// Async prompt methods
+const confirmed = await dialog.confirm({ content: ... });
+const value = await dialog.prompt<string>({ content: ... });
+await dialog.alert({ content: ... });
+const choice = await dialog.choice<"a" | "b">({ content: ... });
 ```
 
 ### `useDialogState()` Hook
@@ -356,7 +493,7 @@ const count = useDialogState((s) => s.count);
 const topDialog = useDialogState((s) => s.topDialog);
 ```
 
-> [!WARNING]  
+> [!WARNING]
 > Always select primitives not new objects.
 
 ```ts
@@ -379,6 +516,68 @@ if (isOpen) {
 // Solid - call accessors
 if (isOpen()) {
   console.log(`${count()} dialog(s) open`);
+}
+```
+
+### `useDialogKeyboard()` Hook
+
+When using `useKeyboard` from `@opentui/react` or `@opentui/solid` inside dialog content, keyboard events fire for **all** stacked dialogs simultaneously. This is because `useKeyboard` registers global listeners with no focus scoping.
+
+`useDialogKeyboard` solves this by only firing the handler when the dialog is the topmost in the stack:
+
+```tsx
+import { useDialogKeyboard, type ConfirmContext } from "@opentui-ui/dialog/react";
+
+function DeleteConfirmDialog({ resolve, dialogId }: ConfirmContext) {
+  const [selected, setSelected] = useState<"cancel" | "delete">("cancel");
+
+  // Only fires when THIS dialog is topmost
+  useDialogKeyboard((key) => {
+    if (key.name === "tab") {
+      setSelected((prev) => (prev === "cancel" ? "delete" : "cancel"));
+    }
+    if (key.name === "return") {
+      resolve(selected === "delete");
+    }
+    if (key.name === "escape") {
+      resolve(false);
+    }
+  }, dialogId);
+
+  return (
+    <box flexDirection="column">
+      <text>Delete this file?</text>
+      <box flexDirection="row" gap={1}>
+        <text bg={selected === "cancel" ? "#333" : undefined}>Cancel</text>
+        <text bg={selected === "delete" ? "#c00" : undefined}>Delete</text>
+      </box>
+    </box>
+  );
+}
+```
+
+#### Manual Implementation with `dialogId`
+
+If you need more control, use `dialogId` with `useDialogState` and the standard `useKeyboard` hook:
+
+```tsx
+import { useKeyboard } from "@opentui/react";
+import { useDialogState, type ConfirmContext } from "@opentui-ui/dialog/react";
+
+function MyDialog({ resolve, dialogId }: ConfirmContext) {
+  // Reactively check if this dialog is topmost
+  const isTopmost = useDialogState((s) => s.topDialog?.id === dialogId);
+
+  useKeyboard((key) => {
+    // Guard: only handle events when topmost
+    if (!isTopmost) return;
+
+    if (key.name === "return") {
+      resolve(true);
+    }
+  });
+
+  return <text>Press Enter to confirm</text>;
 }
 ```
 
@@ -418,6 +617,113 @@ function MyContent() {
 }
 ```
 
+---
+
+## Customization
+
+These options work with both core and framework usage.
+
+### Default Styling
+
+Out of the box, dialogs use the **minimal** theme:
+
+- Lighter backdrop (35% opacity)
+- No borders
+- Tighter padding (1 cell all around)
+- `top-only` backdrop mode (only topmost dialog shows backdrop)
+
+This provides a clean, unobtrusive appearance while still being usable immediately.
+
+### Themes
+
+Theme presets provide alternative visual styles. Import from `@opentui-ui/dialog/themes`:
+
+```ts
+import { DialogContainerRenderable, DialogManager } from "@opentui-ui/dialog";
+import { themes } from "@opentui-ui/dialog/themes";
+
+const container = new DialogContainerRenderable(renderer, {
+  manager,
+  ...themes.unstyled, // Start from scratch with no default styles
+});
+```
+
+| Theme | Description |
+| ----- | ----------- |
+| `minimal` | Lighter backdrop (35%), no borders, tighter padding (default) |
+| `unstyled` | No backdrop, no background, no border, no padding |
+
+Customize a theme:
+
+```ts
+const container = new DialogContainerRenderable(renderer, {
+  manager,
+  ...themes.minimal,
+  size: "large", // Override specific options
+});
+```
+
+### Backdrop Modes
+
+When stacking multiple dialogs, backdrops can compound and make the screen too dark. Use `backdropMode` to control this:
+
+```ts
+const container = new DialogContainerRenderable(renderer, {
+  manager,
+  backdropMode: "per-dialog", // Each dialog renders its own backdrop
+});
+```
+
+| Mode | Description |
+| ---- | ----------- |
+| `top-only` | Only the topmost dialog renders a backdrop (default) |
+| `per-dialog` | Each dialog renders its own backdrop |
+
+### Unstyled Mode
+
+For full control over dialog styling, use `unstyled: true`. This disables all default styles (backdrop, background, border, padding):
+
+```ts
+const container = new DialogContainerRenderable(renderer, {
+  manager,
+  unstyled: true,
+  dialogOptions: {
+    style: {
+      // Add your own styles
+      backgroundColor: "#262626",
+      border: true,
+      borderColor: "#525252",
+    },
+  },
+});
+```
+
+### Size Presets
+
+Default size presets (in terminal columns):
+
+| Size   | Width              |
+| ------ | ------------------ |
+| small  | 40                 |
+| medium | 60                 |
+| large  | 80                 |
+| full   | terminal width - 4 |
+
+Override with `sizePresets` option:
+
+```ts
+const container = new DialogContainerRenderable(renderer, {
+  manager,
+  sizePresets: {
+    small: 35,
+    medium: 55,
+    large: 75,
+  },
+});
+```
+
+---
+
 ## TypeScript
 
 Full TypeScript support with exported types:
@@ -434,9 +740,15 @@ import type {
   DialogOptions,
   DialogShowOptions,
   DialogSize,
+  DialogState,
   DialogStyle,
   DialogTheme,
   DialogToClose,
+  // Async prompt contexts
+  AlertContext,
+  ChoiceContext,
+  ConfirmContext,
+  PromptContext,
 } from "@opentui-ui/dialog";
 
 // Type guard

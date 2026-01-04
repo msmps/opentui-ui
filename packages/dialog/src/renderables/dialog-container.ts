@@ -56,7 +56,7 @@ export class DialogContainerRenderable extends BoxRenderable {
     const { manager: _, ...containerOptions } = options;
     this._options = containerOptions;
 
-    this._ctx.keyInput.on("keypress", (key) => this.handleKeyboard(key));
+    this._ctx.keyInput.on("keypress", this.handleKeyboard);
 
     this.subscribe();
   }
@@ -78,7 +78,7 @@ export class DialogContainerRenderable extends BoxRenderable {
   /**
    * Handle keyboard events. Returns true if handled (e.g., ESC closed a dialog).
    */
-  private handleKeyboard(evt: DialogKeyboardEvent): boolean {
+  private handleKeyboard = (evt: DialogKeyboardEvent): boolean => {
     if (this._options.closeOnEscape === false) {
       return false;
     }
@@ -94,7 +94,7 @@ export class DialogContainerRenderable extends BoxRenderable {
     }
 
     return false;
-  }
+  };
 
   private getTopDialogRenderable(): DialogRenderable | undefined {
     if (this._dialogRenderables.size === 0) {
@@ -223,7 +223,7 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._unsubscribe?.();
     this._unsubscribe = null;
 
-    this._ctx.keyInput.off("keypress", (key) => this.handleKeyboard(key));
+    this._ctx.keyInput.off("keypress", this.handleKeyboard);
 
     for (const [, renderable] of this._dialogRenderables) {
       renderable.destroy();

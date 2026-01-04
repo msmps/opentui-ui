@@ -15,6 +15,3 @@ export const DIALOG_Z_INDEX = 9998;
 
 /** @internal Used by React/Solid bindings for JSX portals */
 export const JSX_CONTENT_KEY = Symbol("dialog-jsx-content");
-
-/** @internal Used to prevent flicker when JSX content is injected via portals */
-export const DEFERRED_KEY = Symbol("dialog-deferred");

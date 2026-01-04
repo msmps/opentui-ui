@@ -4,17 +4,12 @@ import {
   type RenderContext,
   RGBA,
 } from "@opentui/core";
-import { DEFERRED_KEY } from "../constants";
 import type { Dialog, DialogContainerOptions } from "../types";
 import {
   type ComputedDialogStyle,
   computeDialogStyle,
   getDialogWidth,
 } from "../utils";
-
-interface DialogWithDeferred extends Dialog {
-  [DEFERRED_KEY]?: boolean;
-}
 
 export interface DialogRenderableOptions {
   dialog: Dialog;
@@ -29,7 +24,7 @@ export class DialogRenderable extends BoxRenderable {
   private _dialog: Dialog;
   private _computedStyle: ComputedDialogStyle;
   private _containerOptions?: DialogContainerOptions;
-  private __contentBox: BoxRenderable;
+  private _contentBox: BoxRenderable;
   private _onRemove?: (dialog: Dialog) => void;
   private _onBackdropClick?: () => void;
   private _onReveal?: () => void;
@@ -55,8 +50,7 @@ export class DialogRenderable extends BoxRenderable {
 
     backdropColor.a = backdropOpacity / 255;
 
-    const isDeferred =
-      (options.dialog as DialogWithDeferred)[DEFERRED_KEY] === true;
+    const isDeferred = options.dialog.deferred === true;
 
     super(ctx, {
       id: `dialog-${options.dialog.id}`,
@@ -81,8 +75,8 @@ export class DialogRenderable extends BoxRenderable {
     this._revealed = !isDeferred;
     this._isTopmost = options.isTopmost;
 
-    this.__contentBox = this.createContentPanel();
-    this.add(this.__contentBox);
+    this._contentBox = this.createContentPanel();
+    this.add(this._contentBox);
     this.createContent();
   }
 
@@ -122,7 +116,7 @@ export class DialogRenderable extends BoxRenderable {
   private createContent(): void {
     try {
       const contentRenderable = this._dialog.content(this.ctx);
-      this.__contentBox.add(contentRenderable);
+      this._contentBox.add(contentRenderable);
     } catch (error) {
       const dialogId = this._dialog.id;
       const originalMessage =
@@ -151,7 +145,7 @@ export class DialogRenderable extends BoxRenderable {
 
     this._dialog.onBackdropClick?.();
 
-    if (this._dialog.closeOnClickOutside !== false) {
+    if (this._dialog.closeOnClickOutside === true) {
       this._onBackdropClick?.();
     }
   }
@@ -195,8 +189,8 @@ export class DialogRenderable extends BoxRenderable {
       typeof this._computedStyle.width === "number"
         ? this._computedStyle.width
         : dialogWidth;
-    this.__contentBox.width = panelWidth;
-    this.__contentBox.maxWidth = this._computedStyle.maxWidth ?? width - 2;
+    this._contentBox.width = panelWidth;
+    this._contentBox.maxWidth = this._computedStyle.maxWidth ?? width - 2;
 
     this.requestRender();
   }
@@ -227,8 +221,8 @@ export class DialogRenderable extends BoxRenderable {
   }
 
   /** @internal For framework portal rendering */
-  public get _contentBox(): BoxRenderable {
-    return this.__contentBox;
+  public get contentBox(): BoxRenderable {
+    return this._contentBox;
   }
 
   public get isClosed(): boolean {

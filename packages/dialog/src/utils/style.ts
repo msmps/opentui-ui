@@ -71,7 +71,9 @@ export function computeDialogStyle(
     ? { top: 0, right: 0, bottom: 0, left: 0 }
     : DEFAULT_PADDING;
 
-  const resolvedPadding = resolvePadding(computed, defaultPadding);
+  const resolvedPadding = isUnstyled
+    ? { top: 0, right: 0, bottom: 0, left: 0 }
+    : resolvePadding(computed, defaultPadding);
 
   return {
     ...computed,

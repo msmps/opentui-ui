@@ -1,14 +1,20 @@
 /** @jsxImportSource @opentui/react */
 
-import { BoxRenderable, type RenderContext } from "@opentui/core";
+import {
+  BoxRenderable,
+  type KeyEvent,
+  type RenderContext,
+} from "@opentui/core";
 import {
   createPortal,
+  useKeyboard,
   useRenderer,
   useTerminalDimensions,
 } from "@opentui/react";
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -16,13 +22,25 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { DEFERRED_KEY, JSX_CONTENT_KEY } from "./constants";
+import { JSX_CONTENT_KEY } from "./constants";
 import { DialogManager } from "./manager";
+import type {
+  AlertContext,
+  ChoiceContext,
+  ConfirmContext,
+  DialogState,
+  PromptContext,
+} from "./prompts";
 import {
   DialogContainerRenderable,
   type DialogRenderable,
 } from "./renderables";
 import type {
+  BaseAlertOptions,
+  BaseChoiceOptions,
+  BaseConfirmOptions,
+  BaseDialogActions,
+  BasePromptOptions,
   Dialog,
   DialogContainerOptions,
   DialogId,
@@ -31,46 +49,116 @@ import type {
 
 interface DialogWithJsx extends Dialog {
   [JSX_CONTENT_KEY]?: ReactNode;
-  [DEFERRED_KEY]?: boolean;
 }
 
-export interface ReactDialogShowOptions
-  extends Omit<DialogShowOptions, "content"> {
-  content: ReactNode;
+/** Internal type for show options that include JSX bridging keys */
+interface DialogShowOptionsWithJsx extends DialogShowOptions {
+  [JSX_CONTENT_KEY]?: ReactNode;
 }
+
+export interface ShowOptions extends Omit<DialogShowOptions, "content"> {
+  content: (() => ReactNode) | ReactNode;
+}
+
+// ============================================================================
+// React Prompt Types
+// ============================================================================
+// These extend the generic base types with React-specific content signatures.
+
+/** Content factory for prompt dialogs. */
+type PromptContent<T> = (ctx: PromptContext<T>) => ReactNode;
+
+/** Content factory for confirm dialogs. */
+type ConfirmContent = (ctx: ConfirmContext) => ReactNode;
+
+/** Content factory for alert dialogs. */
+type AlertContent = (ctx: AlertContext) => ReactNode;
+
+/** Content factory for choice dialogs. */
+type ChoiceContent<K extends string> = (ctx: ChoiceContext<K>) => ReactNode;
 
 /**
- * Dialog state available via useDialogState selector.
+ * Options for a generic prompt dialog.
+ * @template T The type of value the prompt resolves to.
  */
-export interface DialogState {
-  /** Whether any dialog is currently open. */
-  isOpen: boolean;
-  /** Array of all active dialogs (oldest first). */
-  dialogs: readonly Dialog[];
-  /** The top-most (most recent) dialog, or undefined if none. */
-  topDialog: Dialog | undefined;
-  /** Number of currently open dialogs. */
-  count: number;
-}
+export interface PromptOptions<T>
+  extends BasePromptOptions<T, PromptContent<T>> {}
+
+/**
+ * Options for a confirm dialog.
+ */
+export interface ConfirmOptions extends BaseConfirmOptions<ConfirmContent> {}
+
+/**
+ * Options for an alert dialog.
+ */
+export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
+
+/**
+ * Options for a choice dialog.
+ * @template K The type of keys for the available choices.
+ */
+export interface ChoiceOptions<K extends string>
+  extends BaseChoiceOptions<ChoiceContent<K>> {}
 
 /**
  * Dialog actions for showing, closing, and managing dialogs.
+ * Extends BaseDialogActions with async prompt methods.
  */
-export interface DialogActions {
-  /** Show a new dialog and return its ID. */
-  show: (options: ReactDialogShowOptions) => DialogId;
-  /** Close a specific dialog by ID, or the top-most dialog if no ID provided. */
-  close: (id?: DialogId) => DialogId | undefined;
-  /** Close all open dialogs. */
-  closeAll: () => void;
-  /** Close all dialogs and show a new one. */
-  replace: (options: ReactDialogShowOptions) => DialogId;
+export interface DialogActions extends BaseDialogActions<ShowOptions> {
+  /** Show a generic prompt dialog and wait for a response. */
+  prompt: <T>(options: PromptOptions<T>) => Promise<T | undefined>;
+  /** Show a confirmation dialog and wait for the user to confirm or cancel. */
+  confirm: (options: ConfirmOptions) => Promise<boolean>;
+  /** Show an alert dialog and wait for the user to dismiss it. */
+  alert: (options: AlertOptions) => Promise<void>;
+  /** Show a choice dialog and wait for the user to select an option. */
+  choice: <K extends string>(
+    options: ChoiceOptions<K>,
+  ) => Promise<K | undefined>;
 }
 
 const DialogContext = createContext<DialogManager | null>(null);
 
 const createPlaceholderContent = () => (ctx: RenderContext) =>
   new BoxRenderable(ctx, { id: "~jsx-placeholder" });
+
+/**
+ * Helper to build dialog show options for React adapter.
+ * Handles both direct show/replace calls and async prompt methods.
+ *
+ * @param content - ReactNode, () => ReactNode, or (ctx) => ReactNode
+ * @param rest - Dialog options excluding content
+ * @param ctx - Optional context for async prompts (prompt, confirm, alert, choice)
+ */
+function buildShowOptions(
+  content: ReactNode | (() => ReactNode),
+  rest: Omit<DialogShowOptions, "content">,
+): DialogShowOptionsWithJsx;
+function buildShowOptions<TCtx>(
+  content: (ctx: TCtx) => ReactNode,
+  rest: Omit<DialogShowOptions, "content">,
+  ctx: TCtx,
+): DialogShowOptionsWithJsx;
+function buildShowOptions(
+  content: ReactNode | ((...args: unknown[]) => unknown),
+  rest: Omit<DialogShowOptions, "content">,
+  ctx?: unknown,
+): DialogShowOptionsWithJsx {
+  const resolvedContent =
+    typeof content === "function"
+      ? ctx !== undefined
+        ? content(ctx)
+        : content()
+      : content;
+
+  return {
+    ...rest,
+    content: createPlaceholderContent(),
+    deferred: true,
+    [JSX_CONTENT_KEY]: resolvedContent,
+  } as DialogShowOptionsWithJsx;
+}
 
 function useDialogManager(): DialogManager {
   const manager = useContext(DialogContext);
@@ -120,32 +208,47 @@ export function useDialog(): DialogActions {
 
   return useMemo<DialogActions>(
     () => ({
-      show: (options: ReactDialogShowOptions) => {
+      show: (options: ShowOptions) => {
         const { content, ...rest } = options;
-
-        return manager.show({
-          ...rest,
-          content: createPlaceholderContent(),
-          // @ts-expect-error - Symbol keys for internal use
-          [JSX_CONTENT_KEY]: content,
-          [DEFERRED_KEY]: true,
-        });
+        return manager.show(buildShowOptions(content, rest));
       },
 
       close: (id?: DialogId) => manager.close(id),
 
       closeAll: () => manager.closeAll(),
 
-      replace: (options: ReactDialogShowOptions) => {
+      replace: (options: ShowOptions) => {
         const { content, ...rest } = options;
+        return manager.replace(buildShowOptions(content, rest));
+      },
 
-        return manager.replace({
-          ...rest,
-          content: createPlaceholderContent(),
-          // @ts-expect-error - Symbol keys for internal use
-          [JSX_CONTENT_KEY]: content,
-          [DEFERRED_KEY]: true,
-        });
+      // =====================================================================
+      // Async Prompt Methods (delegate to manager with factory pattern)
+      // =====================================================================
+
+      prompt: <T,>(options: PromptOptions<T>): Promise<T | undefined> => {
+        const { content, fallback, ...rest } = options;
+        return manager.prompt<T>((ctx) => ({
+          ...buildShowOptions(content, rest, ctx),
+          fallback,
+        }));
+      },
+
+      confirm: (options: ConfirmOptions): Promise<boolean> => {
+        const { content, ...rest } = options;
+        return manager.confirm((ctx) => buildShowOptions(content, rest, ctx));
+      },
+
+      alert: (options: AlertOptions): Promise<void> => {
+        const { content, ...rest } = options;
+        return manager.alert((ctx) => buildShowOptions(content, rest, ctx));
+      },
+
+      choice: <K extends string>(
+        options: ChoiceOptions<K>,
+      ): Promise<K | undefined> => {
+        const { content, ...rest } = options;
+        return manager.choice<K>((ctx) => buildShowOptions(content, rest, ctx));
       },
     }),
     [manager],
@@ -179,7 +282,7 @@ export function useDialogState<T>(selector: (state: DialogState) => T): T {
     [manager],
   );
 
-  const getSnapshot = () => {
+  const getSnapshot = useCallback(() => {
     const dialogs = manager.getDialogs();
     const state: DialogState = {
       isOpen: dialogs.length > 0,
@@ -188,9 +291,43 @@ export function useDialogState<T>(selector: (state: DialogState) => T): T {
       count: dialogs.length,
     };
     return selector(state);
-  };
+  }, [manager, selector]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * A keyboard hook for dialog content that only fires when the dialog is topmost.
+ *
+ * This prevents keyboard events from affecting stacked dialogs that are not focused.
+ * Use this instead of `useKeyboard` inside dialog content components.
+ *
+ * @param handler - Keyboard event handler (only called when dialog is topmost)
+ * @param dialogId - The dialog's ID from context (e.g., `ctx.dialogId`)
+ *
+ * @example
+ * ```tsx
+ * function DeleteConfirmDialog({ resolve, dialogId }: ConfirmContext) {
+ *   useDialogKeyboard((key) => {
+ *     if (key.name === "return") resolve(true);
+ *     if (key.name === "escape") resolve(false);
+ *   }, dialogId);
+ *
+ *   return <text>Press Enter to confirm</text>;
+ * }
+ * ```
+ */
+export function useDialogKeyboard(
+  handler: (key: KeyEvent) => void | Promise<void>,
+  dialogId: DialogId,
+): void {
+  const isTopmost = useDialogState((s) => s.topDialog?.id === dialogId);
+
+  useKeyboard((key) => {
+    if (isTopmost) {
+      handler(key);
+    }
+  });
 }
 
 export interface DialogProviderProps extends DialogContainerOptions {
@@ -260,12 +397,10 @@ export function DialogProvider(props: DialogProviderProps) {
       const jsxContent = dialogWithJsx[JSX_CONTENT_KEY];
 
       if (jsxContent !== undefined) {
-        if (dialogWithJsx[DEFERRED_KEY]) {
+        if (dialogWithJsx.deferred) {
           deferredDialogs.push(dialogRenderable);
         }
-        portals.push(
-          createPortal(jsxContent, dialogRenderable._contentBox, id),
-        );
+        portals.push(createPortal(jsxContent, dialogRenderable.contentBox, id));
       }
     }
 
@@ -286,17 +421,22 @@ export function DialogProvider(props: DialogProviderProps) {
   );
 }
 
-export { DialogManager } from "./manager";
+// =============================================================================
+// Re-exports for convenience
+// =============================================================================
+
+export type {
+  AlertContext,
+  ChoiceContext,
+  ConfirmContext,
+  DialogState,
+  PromptContext,
+} from "./prompts";
 export { type DialogTheme, themes } from "./themes";
 export type {
-  Dialog,
   DialogBackdropMode,
   DialogContainerOptions,
-  DialogContentFactory,
   DialogId,
-  DialogOptions,
-  DialogShowOptions,
   DialogSize,
   DialogStyle,
-  DialogToClose,
 } from "./types";
