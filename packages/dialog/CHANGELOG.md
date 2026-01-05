@@ -4,7 +4,8 @@
 
 ### Minor Changes
 
-- [#12](https://github.com/msmps/opentui-ui/pull/12) [`1b54167`](https://github.com/msmps/opentui-ui/commit/1b541674b09f0b669ca2d93bdf8591e4aa3c38ee) Thanks [@msmps](https://github.com/msmps)! - ### Breaking Changes
+- [#12](https://github.com/msmps/opentui-ui/pull/12) [`1b54167`](https://github.com/msmps/opentui-ui/commit/1b541674b09f0b669ca2d93bdf8591e4aa3c38ee) Thanks [@msmps](https://github.com/msmps)!
+  ### Breaking Changes
 
   - **React content must be a function**: `content: () => <MyDialog />` instead of `content: <MyDialog />`
   - **Backdrop options moved to top-level**: `backdropColor` and `backdropOpacity` are now on `DialogShowOptions`/`DialogContainerOptions`, not nested in `style`
