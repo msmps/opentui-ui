@@ -115,8 +115,10 @@ export class DialogContainerRenderable extends BoxRenderable {
     // Call the dialog's onBackdropClick handler if present
     topDialog.dialog.onBackdropClick?.();
 
-    // Close if closeOnClickOutside is enabled
-    if (topDialog.dialog.closeOnClickOutside === true) {
+    // Close if closeOnClickOutside is enabled (dialog-level takes precedence over container-level)
+    const closeOnClickOutside =
+      topDialog.dialog.closeOnClickOutside ?? this._options.closeOnClickOutside;
+    if (closeOnClickOutside === true) {
       this._manager.close(topDialog.dialog.id);
     }
   }
@@ -235,6 +237,10 @@ export class DialogContainerRenderable extends BoxRenderable {
 
   public set closeOnEscape(value: boolean) {
     this._options.closeOnEscape = value;
+  }
+
+  public set closeOnClickOutside(value: boolean) {
+    this._options.closeOnClickOutside = value;
   }
 
   public override destroy(): void {

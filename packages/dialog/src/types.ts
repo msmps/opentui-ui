@@ -84,6 +84,8 @@ export interface DialogContainerOptions {
   sizePresets?: Partial<Record<DialogSize, number>>;
   /** @default true */
   closeOnEscape?: boolean;
+  /** @default false */
+  closeOnClickOutside?: boolean;
   unstyled?: boolean;
 }
 
