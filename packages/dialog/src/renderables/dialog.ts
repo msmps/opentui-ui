@@ -5,8 +5,9 @@ import {
   type RGBA,
 } from "@opentui/core";
 import { normalizeOpacity } from "@opentui-ui/utils";
+import { JSX_CONTENT_KEY } from "../constants";
 import { DEFAULT_BACKDROP_COLOR, DEFAULT_BACKDROP_OPACITY } from "../themes";
-import type { DialogContainerOptions, InternalDialog } from "../types";
+import type { Dialog, DialogContainerOptions, DialogId } from "../types";
 import {
   type ComputedDialogStyle,
   computeDialogStyle,
@@ -14,24 +15,22 @@ import {
 } from "../utils";
 
 export interface DialogRenderableOptions {
-  dialog: InternalDialog;
+  dialog: Dialog;
   containerOptions: DialogContainerOptions;
-  onRemove?: (dialog: InternalDialog) => void;
+  /** Request the manager to close this dialog. */
+  onRequestClose?: (id: DialogId) => void;
 }
 
 export class DialogRenderable extends BoxRenderable {
-  private _dialog: InternalDialog;
+  private _dialog: Dialog;
   private _computedStyle: ComputedDialogStyle;
   private _containerOptions: DialogContainerOptions;
-  private _onRemove?: (dialog: InternalDialog) => void;
+  private _onRequestClose?: (id: DialogId) => void;
   private _backdrop: BoxRenderable;
   private _contentBox: BoxRenderable;
-  private _closed: boolean = false;
-  private _revealed: boolean = false;
 
   constructor(ctx: RenderContext, options: DialogRenderableOptions) {
-    const { dialog, containerOptions, onRemove } = options;
-    const isDeferred = dialog.deferred === true;
+    const { dialog, containerOptions, onRequestClose } = options;
 
     // Full-screen transparent container for positioning
     super(ctx, {
@@ -43,13 +42,12 @@ export class DialogRenderable extends BoxRenderable {
       height: ctx.height,
       alignItems: "center",
       justifyContent: "center",
-      visible: !isDeferred,
+      visible: true,
     });
 
     this._dialog = dialog;
     this._containerOptions = containerOptions;
-    this._onRemove = onRemove;
-    this._revealed = !isDeferred;
+    this._onRequestClose = onRequestClose;
 
     // 1. Create backdrop (full screen overlay)
     this._backdrop = new BoxRenderable(ctx, {
@@ -97,10 +95,12 @@ export class DialogRenderable extends BoxRenderable {
     });
     this.add(this._contentBox);
 
-    // 3. Add user content to content box (unless deferred)
-    if (!isDeferred) {
-      this.createContent();
+    if (dialog?.[JSX_CONTENT_KEY]) {
+      // Reconcilers take over rendering the tree from here
+      return;
     }
+
+    this.createContent();
   }
 
   private createContent(): void {
@@ -137,7 +137,7 @@ export class DialogRenderable extends BoxRenderable {
       this._dialog.closeOnClickOutside ??
       this._containerOptions.closeOnClickOutside;
     if (closeOnClickOutside === true) {
-      this.close();
+      this._onRequestClose?.(this._dialog.id);
     }
   }
 
@@ -169,34 +169,8 @@ export class DialogRenderable extends BoxRenderable {
     this.requestRender();
   }
 
-  /**
-   * Reveal a deferred dialog (used by framework adapters).
-   * Creates content if not already created.
-   */
-  public reveal(): void {
-    if (this._revealed) return;
-    this._revealed = true;
-    this.visible = true;
-    this.createContent();
-    this.requestRender();
-  }
-
-  public get isRevealed(): boolean {
-    return this._revealed;
-  }
-
-  public close(): void {
-    if (this._closed) return;
-    this._closed = true;
-    this._onRemove?.(this._dialog);
-  }
-
-  public get dialog(): InternalDialog {
+  public get dialog(): Dialog {
     return this._dialog;
-  }
-
-  public get isClosed(): boolean {
-    return this._closed;
   }
 
   /**
@@ -205,15 +179,10 @@ export class DialogRenderable extends BoxRenderable {
   public get contentBox(): BoxRenderable {
     return this._contentBox;
   }
-
-  public override destroy(): void {
-    this._closed = true;
-    super.destroy();
-  }
 }
 
 function computeBackdropColor(
-  dialog: InternalDialog,
+  dialog: Dialog,
   containerOptions: DialogContainerOptions,
 ): RGBA {
   const color =

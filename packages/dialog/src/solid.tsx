@@ -45,19 +45,17 @@ import type {
   DialogId,
   DialogShowOptions,
   DialogToClose,
-  InternalDialog,
-  InternalDialogShowOptions,
 } from "./types";
 
 /** Function returning JSX. Required because Solid JSX is eagerly evaluated. */
 export type ContentAccessor = () => JSX.Element;
 
-interface DialogWithJsx extends InternalDialog {
+interface DialogWithJsx extends Dialog {
   [JSX_CONTENT_KEY]?: ContentAccessor;
 }
 
 /** Internal type for show options that include JSX bridging keys */
-interface DialogShowOptionsWithJsx extends InternalDialogShowOptions {
+interface DialogShowOptionsWithJsx extends DialogShowOptions {
   [JSX_CONTENT_KEY]?: ContentAccessor;
 }
 

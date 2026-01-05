@@ -17,7 +17,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -31,29 +30,25 @@ import type {
   DialogState,
   PromptContext,
 } from "./prompts";
-import {
-  DialogContainerRenderable,
-  type DialogRenderable,
-} from "./renderables";
+import { DialogContainerRenderable } from "./renderables";
 import type {
   BaseAlertOptions,
   BaseChoiceOptions,
   BaseConfirmOptions,
   BaseDialogActions,
   BasePromptOptions,
+  Dialog,
   DialogContainerOptions,
   DialogId,
   DialogShowOptions,
-  InternalDialog,
-  InternalDialogShowOptions,
 } from "./types";
 
-interface DialogWithJsx extends InternalDialog {
+interface DialogWithJsx extends Dialog {
   [JSX_CONTENT_KEY]?: ReactNode;
 }
 
 /** Internal type for show options that include JSX bridging keys */
-interface DialogShowOptionsWithJsx extends InternalDialogShowOptions {
+interface DialogShowOptionsWithJsx extends DialogShowOptions {
   [JSX_CONTENT_KEY]?: ReactNode;
 }
 
@@ -157,7 +152,6 @@ function buildShowOptions(
   return {
     ...rest,
     content: createPlaceholderContent(),
-    deferred: true,
     [JSX_CONTENT_KEY]: resolvedContent,
   } as DialogShowOptionsWithJsx;
 }
@@ -390,12 +384,11 @@ export function DialogProvider(props: DialogProviderProps) {
     container.updateDimensions(dimensions.width);
   }, [container, dimensions.width]);
 
-  const { portals, deferredDialogs } = useMemo(() => {
+  const { portals } = useMemo(() => {
     // storeVersion is used to trigger recomputation when dialog state changes
     void storeVersion;
 
     const portals: ReactNode[] = [];
-    const deferredDialogs: DialogRenderable[] = [];
     const dialogRenderables = container.getDialogRenderables();
 
     for (const [id, dialogRenderable] of dialogRenderables) {
@@ -403,21 +396,12 @@ export function DialogProvider(props: DialogProviderProps) {
       const jsxContent = dialogWithJsx[JSX_CONTENT_KEY];
 
       if (jsxContent !== undefined) {
-        if (dialogWithJsx.deferred) {
-          deferredDialogs.push(dialogRenderable);
-        }
         portals.push(createPortal(jsxContent, dialogRenderable.contentBox, id));
       }
     }
 
-    return { portals, deferredDialogs };
+    return { portals };
   }, [container, storeVersion]);
-
-  useLayoutEffect(() => {
-    for (const dialogRenderable of deferredDialogs) {
-      dialogRenderable.reveal();
-    }
-  }, [deferredDialogs]);
 
   return (
     <DialogContext.Provider value={manager}>

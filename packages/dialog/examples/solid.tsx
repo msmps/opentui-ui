@@ -109,7 +109,7 @@ function App() {
             </box>
           ),
           size: "medium",
-          style: { backdropOpacity: 0.4 },
+          backdropOpacity: 0.4,
         });
         // Show second dialog after small delay - track timeout for cleanup
         const timeout = setTimeout(() => {
@@ -121,7 +121,7 @@ function App() {
               </box>
             ),
             size: "small",
-            style: { backdropOpacity: 0.3 },
+            backdropOpacity: 0.3,
           });
         }, 100);
         pendingTimeouts.push(timeout);
@@ -139,9 +139,9 @@ function App() {
             </box>
           ),
           size: "medium",
+          backdropOpacity: 0.8,
+          backdropColor: "#1a0a2e",
           style: {
-            backdropOpacity: 0.8,
-            backdropColor: "#1a0a2e",
             backgroundColor: "#2d1b4e",
             border: true,
             borderColor: "#9b59b6",
@@ -183,10 +183,10 @@ function Root() {
   return (
     <DialogProvider
       size="medium"
+      backdropOpacity={0.59}
+      backdropColor="#16213e"
       dialogOptions={{
         style: {
-          backdropOpacity: 0.59,
-          backgroundColor: "#16213e",
           paddingTop: 1,
           paddingBottom: 1,
           paddingLeft: 2,

@@ -1,4 +1,5 @@
 import type { BorderStyle, Renderable, RenderContext } from "@opentui/core";
+import { JSX_CONTENT_KEY } from "./constants";
 
 export type DialogId = string | number;
 
@@ -42,20 +43,8 @@ export interface Dialog {
   onClose?: () => void;
   onOpen?: () => void;
   onBackdropClick?: () => void;
-}
-
-/**
- * Internal dialog type with adapter-specific properties.
- * Used by React/Solid adapters for deferred rendering.
- * @internal
- */
-export interface InternalDialog extends Dialog {
-  /**
-   * When true, the dialog is initially hidden until `reveal()` is called.
-   * Used by framework adapters to prevent flicker when JSX content is
-   * injected via portals after the dialog renderable is created.
-   */
-  deferred?: boolean;
+  /** @internal Used by React/Solid bindings to store JSX portal content. */
+  [JSX_CONTENT_KEY]?: unknown;
 }
 
 export interface DialogToClose {
@@ -64,14 +53,6 @@ export interface DialogToClose {
 }
 
 export interface DialogShowOptions extends Omit<Dialog, "id"> {
-  id?: DialogId;
-}
-
-/**
- * Internal show options with adapter-specific properties.
- * @internal
- */
-export interface InternalDialogShowOptions extends Omit<InternalDialog, "id"> {
   id?: DialogId;
 }
 
