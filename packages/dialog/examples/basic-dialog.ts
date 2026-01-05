@@ -213,9 +213,7 @@ Press ESC to close this dialog.`,
           return box;
         },
         size: "medium",
-        style: {
-          backdropOpacity: 0.4, // 40% opacity
-        },
+        backdropOpacity: 0.4, // 40% opacity
         onClose: () => updateStatus(),
       });
 
@@ -248,9 +246,7 @@ Press ESC to close this dialog.`,
             return box;
           },
           size: "small",
-          style: {
-            backdropOpacity: 0.3, // 30% opacity
-          },
+          backdropOpacity: 0.3, // 30% opacity
           onClose: () => updateStatus(),
         });
         updateStatus();
@@ -291,9 +287,9 @@ Press ESC to close.`,
           return box;
         },
         size: sizes[sizeIndex],
+        backdropOpacity: 0.8, // 80% opacity
+        backdropColor: "#1a0a2e",
         style: {
-          backdropOpacity: 0.8, // 80% opacity
-          backdropColor: "#1a0a2e",
           backgroundColor: "#2d1b4e",
           border: true,
           borderColor: "#9b59b6",
@@ -361,9 +357,9 @@ Press ESC to close.`,
           return box;
         },
         size: "large",
+        backdropOpacity: 1,
+        backdropColor: "#0000AA", // DOS blue
         style: {
-          backdropOpacity: 1,
-          backdropColor: "#0000AA", // DOS blue
           backgroundColor: "#AAAAAA", // DOS gray
           border: true,
           borderColor: "#000000",
