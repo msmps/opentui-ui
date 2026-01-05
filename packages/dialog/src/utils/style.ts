@@ -27,11 +27,7 @@ export function computeDialogStyle(
 ): ComputedDialogStyle {
   const { dialog, containerOptions } = input;
 
-  const isUnstyled =
-    dialog.unstyled ??
-    containerOptions?.dialogOptions?.unstyled ??
-    containerOptions?.unstyled ??
-    false;
+  const isUnstyled = dialog.unstyled ?? containerOptions?.unstyled ?? false;
 
   const baseStyle = isUnstyled ? {} : DEFAULT_STYLE;
 

@@ -74,7 +74,6 @@ export interface InternalDialogShowOptions extends Omit<InternalDialog, "id"> {
 
 export interface DialogOptions {
   style?: DialogStyle;
-  unstyled?: boolean;
 }
 
 export interface DialogContainerOptions {

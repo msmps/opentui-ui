@@ -30,7 +30,6 @@ export const unstyled: DialogTheme = {
   description: "No default styles - full control for custom implementations",
   unstyled: true,
   dialogOptions: {
-    unstyled: true,
     style: {
       backdropOpacity: 0,
       backgroundColor: undefined,
