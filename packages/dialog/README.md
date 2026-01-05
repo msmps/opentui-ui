@@ -212,6 +212,9 @@ const id = manager.show({
   size?: "small" | "medium" | "large" | "full",
   style?: DialogStyle,
   unstyled?: boolean,
+  backdropColor?: string, // default: "#000000"
+  backdropOpacity?: number | string, // 0-1 or "50%" (default: 0.35)
+  closeOnEscape?: boolean, // default: true (per-dialog override)
   closeOnClickOutside?: boolean, // default: false
   onClose?: () => void,
   onOpen?: () => void,
@@ -252,9 +255,8 @@ const container = new DialogContainerRenderable(renderer, {
   manager, // Required: DialogManager instance
   size: "medium", // Default size preset
   dialogOptions: {
-    // Default options for all dialogs
+    // Default style options for all dialogs
     style: DialogStyle,
-    unstyled: boolean,
   },
   sizePresets: {
     // Custom size presets (terminal columns)
@@ -262,7 +264,10 @@ const container = new DialogContainerRenderable(renderer, {
     medium: 60,
     large: 80,
   },
+  backdropColor: "#000000", // Default backdrop color
+  backdropOpacity: 0.35, // 0-1 or "50%" (default: 0.35)
   closeOnEscape: true, // ESC key closes top dialog (default: true)
+  closeOnClickOutside: false, // Backdrop click closes top dialog (default: false)
   unstyled: false, // Disable default styles (default: false)
 });
 
@@ -274,10 +279,6 @@ renderer.root.add(container);
 
 ```typescript
 interface DialogStyle {
-  // Backdrop
-  backdropColor?: string; // Default: "#000000"
-  backdropOpacity?: number | string; // 0-1, or "50%" (default: 0.35)
-
   // Content panel
   backgroundColor?: string; // Default: "#262626"
   borderColor?: string;
@@ -448,13 +449,15 @@ Returns dialog actions for imperatively controlling dialogs.
 ```tsx
 const dialog = useDialog();
 
-// Show a dialog
+// Show a dialog (content must be a function for both React and Solid)
 dialog.show({
-  content: <MyContent />,        // React: JSX directly
-  content: () => <MyContent />,  // Solid: function returning JSX
+  content: () => <MyContent />,
   size: "medium",
   style: { backgroundColor: "#1a1a1a" },
   unstyled: false,
+  backdropColor: "#000000",
+  backdropOpacity: 0.5,
+  closeOnEscape: true,
   closeOnClickOutside: true,
   onClose: () => {},
   onOpen: () => {},
@@ -582,7 +585,7 @@ function MyDialog({ resolve, dialogId }: ConfirmContext) {
 ### Full Example
 
 ```tsx
-// React
+// React (content must be a function)
 function MyContent() {
   const dialog = useDialog();
   const isOpen = useDialogState((s) => s.isOpen);
@@ -590,7 +593,7 @@ function MyContent() {
   return (
     <box>
       <text>{isOpen ? "Dialog open" : "No dialog"}</text>
-      <box onMouseUp={() => dialog.show({ content: <text>Hello!</text> })}>
+      <box onMouseUp={() => dialog.show({ content: () => <text>Hello!</text> })}>
         <text>Open Dialog</text>
       </box>
     </box>
@@ -710,32 +713,42 @@ const container = new DialogContainerRenderable(renderer, {
 Full TypeScript support with exported types:
 
 ```ts
+// Core types
 import type {
-  ComputedDialogStyle,
-  ComputeDialogStyleInput,
+  // Dialog types
   Dialog,
   DialogContainerOptions,
-  DialogContentFactory,
   DialogId,
-  DialogOptions,
   DialogShowOptions,
   DialogSize,
-  DialogState,
   DialogStyle,
   DialogTheme,
-  DialogToClose,
   // Async prompt contexts
   AlertContext,
   ChoiceContext,
   ConfirmContext,
   PromptContext,
+  // Async dialog options (for imperative usage)
+  AlertOptions,
+  ChoiceOptions,
+  ConfirmOptions,
+  PromptOptions,
+  // Base types (for building custom adapters)
+  AsyncDialogOptions,
+  BaseAlertOptions,
+  BaseChoiceOptions,
+  BaseConfirmOptions,
+  BaseDialogActions,
+  BasePromptOptions,
 } from "@opentui-ui/dialog";
 
-// Type guard
-import { isDialogToClose } from "@opentui-ui/dialog";
+// Framework adapters also export DialogState
+import type { DialogState } from "@opentui-ui/dialog/react";
+// import type { DialogState } from "@opentui-ui/dialog/solid";
 
 // Themes and default style constants
 import {
+  DEFAULT_BACKDROP_COLOR,
   DEFAULT_BACKDROP_OPACITY,
   DEFAULT_PADDING,
   DEFAULT_STYLE,
