@@ -235,7 +235,6 @@ export class DialogManager {
       const dialog: Dialog = {
         ...options,
         id,
-        closeOnClickOutside: options.closeOnClickOutside ?? false,
       };
       this.addDialog(dialog);
       dialog.onOpen?.();
@@ -390,7 +389,6 @@ export class DialogManager {
           showOptions.onClose?.();
           safeResolve(fallback ?? defaultDismissValue);
         },
-        closeOnClickOutside: showOptions.closeOnClickOutside ?? false,
       });
     });
   }

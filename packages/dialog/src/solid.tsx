@@ -388,6 +388,9 @@ export function DialogProvider(props: ParentProps<DialogProviderProps>) {
     dialogOptions: props.dialogOptions,
     sizePresets: props.sizePresets,
     closeOnEscape: props.closeOnEscape,
+    closeOnClickOutside: props.closeOnClickOutside,
+    backdropColor: props.backdropColor,
+    backdropOpacity: props.backdropOpacity,
     unstyled: props.unstyled,
   });
   renderer.root.add(container);
@@ -437,10 +440,10 @@ export function DialogProvider(props: ParentProps<DialogProviderProps>) {
       if (contentAccessor !== undefined) {
         const cached = portalItemCache.get(id);
         const shouldUpdateCachedItem =
-          !cached || cached.mount !== dialogRenderable;
+          !cached || cached.mount !== dialogRenderable.contentBox;
 
         const item: PortalItem = shouldUpdateCachedItem
-          ? { id, contentAccessor, mount: dialogRenderable }
+          ? { id, contentAccessor, mount: dialogRenderable.contentBox }
           : cached;
 
         if (shouldUpdateCachedItem) {

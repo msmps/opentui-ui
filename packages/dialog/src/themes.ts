@@ -5,11 +5,11 @@ export interface DialogTheme extends Omit<DialogContainerOptions, "manager"> {
   description: string;
 }
 
-export const DEFAULT_BACKDROP_OPACITY = 0.35;
+export const DEFAULT_BACKDROP_OPACITY = 89; // 35%
+
+export const DEFAULT_BACKDROP_COLOR = "#000000";
 
 export const DEFAULT_STYLE: DialogStyle = {
-  backdropOpacity: DEFAULT_BACKDROP_OPACITY,
-  backdropColor: "#000000",
   backgroundColor: "#262626",
   border: false,
   padding: 1,
@@ -29,15 +29,12 @@ export const unstyled: DialogTheme = {
   name: "Unstyled",
   description: "No default styles - full control for custom implementations",
   unstyled: true,
+  backdropOpacity: 0,
   dialogOptions: {
     style: {
-      backdropOpacity: 0,
       backgroundColor: undefined,
       border: false,
-      paddingTop: 0,
-      paddingRight: 0,
-      paddingBottom: 0,
-      paddingLeft: 0,
+      padding: 0,
     },
   },
 };

@@ -5,9 +5,6 @@ export type DialogId = string | number;
 export type DialogSize = "small" | "medium" | "large" | "full";
 
 export interface DialogStyle {
-  backdropColor?: string;
-  /** 0-1 (number) or "50%" (string). @default 0.59 */
-  backdropOpacity?: number | string;
   backgroundColor?: string;
   borderColor?: string;
   borderStyle?: BorderStyle;
@@ -34,8 +31,14 @@ export interface Dialog {
   size?: DialogSize;
   style?: DialogStyle;
   unstyled?: boolean;
+  /** @default true */
+  closeOnEscape?: boolean;
   /** @default false */
   closeOnClickOutside?: boolean;
+  /** Per-dialog backdrop color override. */
+  backdropColor?: string;
+  /** Per-dialog backdrop opacity override. 0-1 (number) or "50%" (string). */
+  backdropOpacity?: number | string;
   onClose?: () => void;
   onOpen?: () => void;
   onBackdropClick?: () => void;
@@ -85,6 +88,10 @@ export interface DialogContainerOptions {
   closeOnEscape?: boolean;
   /** @default false */
   closeOnClickOutside?: boolean;
+  /** @default "#000000" */
+  backdropColor?: string;
+  /** 0-1 (number) or "50%" (string). @default 0.35 */
+  backdropOpacity?: number | string;
   unstyled?: boolean;
 }
 

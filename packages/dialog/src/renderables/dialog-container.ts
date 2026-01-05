@@ -9,8 +9,6 @@ import type {
   InternalDialog,
 } from "../types";
 import { isDialogToClose } from "../types";
-import { computeDialogStyle } from "../utils";
-import { BackdropRenderable } from "./backdrop";
 import { DialogRenderable } from "./dialog";
 
 export interface DialogContainerRenderableOptions
@@ -39,7 +37,6 @@ export class DialogContainerRenderable extends BoxRenderable {
   private _manager: DialogManager;
   private _options: DialogContainerOptions;
   private _dialogRenderables: Map<DialogId, DialogRenderable> = new Map();
-  private _backdrop: BackdropRenderable;
   private _unsubscribe: (() => void) | null = null;
   private _destroyed: boolean = false;
 
@@ -59,14 +56,6 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._manager = options.manager;
     const { manager: _, ...containerOptions } = options;
     this._options = containerOptions;
-
-    // Create the single container-level backdrop
-    this._backdrop = new BackdropRenderable(ctx, {
-      style: this._options.dialogOptions?.style,
-      visible: false,
-      onClick: () => this.handleBackdropClick(),
-    });
-    this.add(this._backdrop);
 
     this._ctx.keyInput.on("keypress", this.handleKeyboard);
 
@@ -91,14 +80,16 @@ export class DialogContainerRenderable extends BoxRenderable {
    * Handle keyboard events. Returns true if handled (e.g., ESC closed a dialog).
    */
   private handleKeyboard = (evt: DialogKeyboardEvent): boolean => {
-    if (this._options.closeOnEscape === false) {
-      return false;
-    }
-
     const key = evt.name;
     if (key === "escape" && this._dialogRenderables.size > 0) {
       const topDialog = this.getTopDialogRenderable();
       if (topDialog) {
+        // Per-dialog closeOnEscape takes precedence over container-level
+        const closeOnEscape =
+          topDialog.dialog.closeOnEscape ?? this._options.closeOnEscape;
+        if (closeOnEscape === false) {
+          return false;
+        }
         evt.preventDefault?.();
         this._manager.close(topDialog.dialog.id);
         return true;
@@ -107,21 +98,6 @@ export class DialogContainerRenderable extends BoxRenderable {
 
     return false;
   };
-
-  private handleBackdropClick(): void {
-    const topDialog = this.getTopDialogRenderable();
-    if (!topDialog) return;
-
-    // Call the dialog's onBackdropClick handler if present
-    topDialog.dialog.onBackdropClick?.();
-
-    // Close if closeOnClickOutside is enabled (dialog-level takes precedence over container-level)
-    const closeOnClickOutside =
-      topDialog.dialog.closeOnClickOutside ?? this._options.closeOnClickOutside;
-    if (closeOnClickOutside === true) {
-      this._manager.close(topDialog.dialog.id);
-    }
-  }
 
   private getTopDialogRenderable(): DialogRenderable | undefined {
     if (this._dialogRenderables.size === 0) {
@@ -158,33 +134,7 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._dialogRenderables.set(dialog.id, dialogRenderable);
     this.add(dialogRenderable);
 
-    this.updateBackdrop();
     this.requestRender();
-  }
-
-  /**
-   * Update the container backdrop visibility and style.
-   * Backdrop is visible when any dialog is open.
-   * Style is determined by topmost dialog's style, falling back to container defaults.
-   */
-  private updateBackdrop(): void {
-    const dialogs = this._manager.getDialogs();
-    const hasDialogs = dialogs.length > 0;
-
-    this._backdrop.visible = hasDialogs;
-
-    if (hasDialogs) {
-      const topDialog = dialogs[dialogs.length - 1];
-      if (!topDialog) return;
-
-      const computedStyle = computeDialogStyle({
-        dialog: topDialog,
-        containerOptions: this._options,
-      });
-      this._backdrop.updateStyle(computedStyle);
-    }
-
-    this._backdrop.requestRender();
   }
 
   private removeDialog(id: DialogId): void {
@@ -200,7 +150,6 @@ export class DialogContainerRenderable extends BoxRenderable {
       this._dialogRenderables.delete(dialog.id);
       this.remove(renderable.id);
       renderable.destroyRecursively();
-      this.updateBackdrop();
       this.requestRender();
     }
   }
@@ -212,12 +161,9 @@ export class DialogContainerRenderable extends BoxRenderable {
     this.width = width;
     this.height = h;
 
-    // Update backdrop dimensions
-    this._backdrop.updateDimensions(width, h);
-
     // Update dialog dimensions
     for (const [, renderable] of this._dialogRenderables) {
-      renderable.updateDimensions(width);
+      renderable.updateDimensions(width, h);
     }
   }
 
@@ -227,8 +173,6 @@ export class DialogContainerRenderable extends BoxRenderable {
 
   public set dialogOptions(value: DialogOptions) {
     this._options.dialogOptions = value;
-    // Update backdrop style when options change
-    this.updateBackdrop();
   }
 
   public set sizePresets(value: Partial<Record<DialogSize, number>>) {
@@ -243,6 +187,14 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._options.closeOnClickOutside = value;
   }
 
+  public set backdropColor(value: string) {
+    this._options.backdropColor = value;
+  }
+
+  public set backdropOpacity(value: number | string) {
+    this._options.backdropOpacity = value;
+  }
+
   public override destroy(): void {
     if (this._destroyed) return;
     this._destroyed = true;
@@ -252,8 +204,7 @@ export class DialogContainerRenderable extends BoxRenderable {
 
     this._ctx.keyInput.off("keypress", this.handleKeyboard);
 
-    this._backdrop.destroy();
-
+    // Clean up dialog renderables
     for (const [, renderable] of this._dialogRenderables) {
       renderable.destroyRecursively();
     }
