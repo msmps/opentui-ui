@@ -188,6 +188,10 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._options.backdropOpacity = value;
   }
 
+  public set unstyled(value: boolean) {
+    this._options.unstyled = value;
+  }
+
   public override destroy(): void {
     if (this._destroyed) return;
     this._destroyed = true;

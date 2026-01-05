@@ -718,11 +718,14 @@ import type {
   // Dialog types
   Dialog,
   DialogContainerOptions,
+  DialogContentFactory,
   DialogId,
   DialogShowOptions,
   DialogSize,
+  DialogState,
   DialogStyle,
   DialogTheme,
+  DialogToClose,
   // Async prompt contexts
   AlertContext,
   ChoiceContext,
@@ -742,9 +745,8 @@ import type {
   BasePromptOptions,
 } from "@opentui-ui/dialog";
 
-// Framework adapters also export DialogState
-import type { DialogState } from "@opentui-ui/dialog/react";
-// import type { DialogState } from "@opentui-ui/dialog/solid";
+// Type guard for close events
+import { isDialogToClose } from "@opentui-ui/dialog";
 
 // Themes and default style constants
 import {

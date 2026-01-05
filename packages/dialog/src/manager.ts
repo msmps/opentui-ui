@@ -70,7 +70,8 @@ export interface AlertOptions extends BaseAlertOptions<AlertContent> {}
  * Options for a choice dialog using core renderables.
  * @template K The type of keys for the available choices.
  */
-export interface ChoiceOptions<K> extends BaseChoiceOptions<ChoiceContent<K>> {}
+export interface ChoiceOptions<K>
+  extends BaseChoiceOptions<ChoiceContent<K>, K> {}
 
 /**
  * Extended DialogShowOptions for async dialog factory functions.
@@ -109,11 +110,21 @@ export class DialogManager {
   }
 
   private saveFocus(): void {
+    this.cancelPendingFocusRestore();
     this.savedFocus = this.ctx.currentFocusedRenderable;
     this.savedFocus?.blur();
   }
 
+  private cancelPendingFocusRestore(): void {
+    if (this.focusRestoreTimeout) {
+      clearTimeout(this.focusRestoreTimeout);
+      this.focusRestoreTimeout = undefined;
+    }
+  }
+
   private restoreFocus(): void {
+    this.cancelPendingFocusRestore();
+
     if (this.savedFocus && !this.savedFocus.isDestroyed) {
       // Defer to next tick to ensure dialog is fully removed from render tree
       this.focusRestoreTimeout = setTimeout(() => {
@@ -497,7 +508,17 @@ export class DialogManager {
         dismiss: () => safeResolve(false),
         dialogId,
       };
-      return { showOptions: this.buildShowOptions(input, ctx) };
+
+      if (typeof input === "function") {
+        const result = input(ctx);
+        return { showOptions: result, fallback: result.fallback };
+      }
+
+      const { fallback, ...rest } = input;
+      return {
+        showOptions: this.buildShowOptions(rest, ctx),
+        fallback,
+      };
     }, false);
   }
 
@@ -588,7 +609,17 @@ export class DialogManager {
         dismiss: () => safeResolve(undefined),
         dialogId,
       };
-      return { showOptions: this.buildShowOptions(input, ctx) };
+
+      if (typeof input === "function") {
+        const result = input(ctx);
+        return { showOptions: result, fallback: result.fallback };
+      }
+
+      const { fallback, ...rest } = input;
+      return {
+        showOptions: this.buildShowOptions(rest, ctx),
+        fallback,
+      };
     }, undefined);
   }
 
@@ -597,11 +628,7 @@ export class DialogManager {
     if (this.destroyed) return;
     this.destroyed = true;
 
-    if (this.focusRestoreTimeout) {
-      clearTimeout(this.focusRestoreTimeout);
-      this.focusRestoreTimeout = undefined;
-    }
-
+    this.cancelPendingFocusRestore();
     this.savedFocus = null;
     this.subscribers.clear();
     this.dialogs = [];
