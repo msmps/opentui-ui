@@ -17,6 +17,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -37,18 +38,19 @@ import type {
   BaseConfirmOptions,
   BaseDialogActions,
   BasePromptOptions,
-  Dialog,
   DialogContainerOptions,
   DialogId,
   DialogShowOptions,
+  InternalDialog,
+  InternalDialogShowOptions,
 } from "./types";
 
-interface DialogWithJsx extends Dialog {
+interface DialogWithJsx extends InternalDialog {
   [JSX_CONTENT_KEY]?: ReactNode;
 }
 
 /** Internal type for show options that include JSX bridging keys */
-interface DialogShowOptionsWithJsx extends DialogShowOptions {
+interface DialogShowOptionsWithJsx extends InternalDialogShowOptions {
   [JSX_CONTENT_KEY]?: ReactNode;
 }
 
@@ -153,6 +155,7 @@ function buildShowOptions(
     ...rest,
     content: createPlaceholderContent(),
     [JSX_CONTENT_KEY]: resolvedContent,
+    deferred: true,
   } as DialogShowOptionsWithJsx;
 }
 
@@ -383,6 +386,17 @@ export function DialogProvider(props: DialogProviderProps) {
   useEffect(() => {
     container.updateDimensions(dimensions.width);
   }, [container, dimensions.width]);
+
+  useLayoutEffect(() => {
+    void storeVersion;
+
+    const dialogRenderables = container.getDialogRenderables();
+
+    for (const [, dialogRenderable] of dialogRenderables) {
+      // Set content box visible after React has injected portal content
+      dialogRenderable.contentBox.visible = true;
+    }
+  }, [storeVersion, container]);
 
   const { portals } = useMemo(() => {
     // storeVersion is used to trigger recomputation when dialog state changes

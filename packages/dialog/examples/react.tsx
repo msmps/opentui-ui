@@ -64,7 +64,7 @@ function App() {
     switch (key.name) {
       case "1":
         dialog.show({
-          content: (
+          content: () => (
             <DialogContent
               title="Simple Dialog"
               message="This is a simple dialog with React JSX content!"
@@ -76,7 +76,7 @@ function App() {
 
       case "2":
         dialog.show({
-          content: (
+          content: () => (
             <box flexDirection="column" gap={1}>
               <text fg="#3498db">Long Content Dialog</text>
               <text fg="#ffffff" wrapMode="word">
@@ -94,33 +94,33 @@ function App() {
       case "3":
         // Show first dialog
         dialog.show({
-          content: (
+          content: () => (
             <box flexDirection="column" gap={1}>
               <text fg="#16c79a">First Dialog</text>
               <text fg="#ffffff">Press 3 again to stack another dialog</text>
             </box>
           ),
           size: "medium",
-          style: { backdropOpacity: 0.4 },
+          backdropOpacity: 0.4,
         });
         // Show second dialog after small delay
         setTimeout(() => {
           dialog.show({
-            content: (
+            content: () => (
               <box flexDirection="column" gap={1}>
                 <text fg="#f39c12">Second Dialog (Stacked)</text>
                 <text fg="#ffffff">ESC closes this one first</text>
               </box>
             ),
             size: "small",
-            style: { backdropOpacity: 0.3 },
+            backdropOpacity: 0.3,
           });
         }, 100);
         break;
 
       case "4":
         dialog.show({
-          content: (
+          content: () => (
             <box flexDirection="column" gap={1}>
               <text fg="#9b59b6">Custom Styled Dialog</text>
               <text fg="#ffffff">
@@ -130,12 +130,12 @@ function App() {
           ),
           size: "medium",
           style: {
-            backdropOpacity: 0.8,
-            backdropColor: "#1a0a2e",
             backgroundColor: "#2d1b4e",
             border: true,
             borderColor: "#9b59b6",
           },
+          backdropColor: "#1a0a2e",
+          backdropOpacity: 0.8,
         });
         break;
 
@@ -175,7 +175,6 @@ function Root() {
       size="medium"
       dialogOptions={{
         style: {
-          backdropOpacity: 0.59,
           backgroundColor: "#16213e",
           paddingTop: 1,
           paddingBottom: 1,
@@ -183,6 +182,7 @@ function Root() {
           paddingRight: 2,
         },
       }}
+      backdropOpacity={0.59}
     >
       <App />
     </DialogProvider>

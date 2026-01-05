@@ -43,8 +43,22 @@ export interface Dialog {
   onClose?: () => void;
   onOpen?: () => void;
   onBackdropClick?: () => void;
+}
+
+/**
+ * Internal dialog type with adapter-specific properties.
+ * Used by React for deferred visibility.
+ * @internal
+ */
+export interface InternalDialog extends Dialog {
   /** @internal Used by React/Solid bindings to store JSX portal content. */
   [JSX_CONTENT_KEY]?: unknown;
+  /**
+   * When true, the dialog is initially hidden until visibility is updated.
+   * Used by adapter(s) to prevent flicker when JSX content is
+   * injected via portals after the dialog renderable is created.
+   */
+  deferred?: boolean;
 }
 
 export interface DialogToClose {
@@ -53,6 +67,10 @@ export interface DialogToClose {
 }
 
 export interface DialogShowOptions extends Omit<Dialog, "id"> {
+  id?: DialogId;
+}
+
+export interface InternalDialogShowOptions extends Omit<InternalDialog, "id"> {
   id?: DialogId;
 }
 

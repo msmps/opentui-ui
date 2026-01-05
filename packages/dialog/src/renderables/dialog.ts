@@ -7,7 +7,11 @@ import {
 import { normalizeOpacity } from "@opentui-ui/utils";
 import { JSX_CONTENT_KEY } from "../constants";
 import { DEFAULT_BACKDROP_COLOR, DEFAULT_BACKDROP_OPACITY } from "../themes";
-import type { Dialog, DialogContainerOptions, DialogId } from "../types";
+import type {
+  DialogContainerOptions,
+  DialogId,
+  InternalDialog,
+} from "../types";
 import {
   type ComputedDialogStyle,
   computeDialogStyle,
@@ -15,14 +19,14 @@ import {
 } from "../utils";
 
 export interface DialogRenderableOptions {
-  dialog: Dialog;
+  dialog: InternalDialog;
   containerOptions: DialogContainerOptions;
   /** Request the manager to close this dialog. */
   onRequestClose?: (id: DialogId) => void;
 }
 
 export class DialogRenderable extends BoxRenderable {
-  private _dialog: Dialog;
+  private _dialog: InternalDialog;
   private _computedStyle: ComputedDialogStyle;
   private _containerOptions: DialogContainerOptions;
   private _onRequestClose?: (id: DialogId) => void;
@@ -31,8 +35,10 @@ export class DialogRenderable extends BoxRenderable {
 
   constructor(ctx: RenderContext, options: DialogRenderableOptions) {
     const { dialog, containerOptions, onRequestClose } = options;
+    const isDeferred = dialog.deferred === true;
 
     // Full-screen transparent container for positioning
+    // Always visible - backdrop needs to show immediately to prevent flash during transitions
     super(ctx, {
       id: `dialog-${dialog.id}`,
       position: "absolute",
@@ -77,6 +83,8 @@ export class DialogRenderable extends BoxRenderable {
         ? this._computedStyle.width
         : dialogWidth;
 
+    // Content box: initially hidden when deferred to prevent empty content flash
+    // Visibility is set by framework adapters after portal content is injected
     this._contentBox = new BoxRenderable(ctx, {
       id: `dialog-content-${dialog.id}`,
       position: "absolute",
@@ -92,6 +100,7 @@ export class DialogRenderable extends BoxRenderable {
       paddingRight: padding.right,
       paddingBottom: padding.bottom,
       paddingLeft: padding.left,
+      visible: !isDeferred,
     });
     this.add(this._contentBox);
 
@@ -169,7 +178,7 @@ export class DialogRenderable extends BoxRenderable {
     this.requestRender();
   }
 
-  public get dialog(): Dialog {
+  public get dialog(): InternalDialog {
     return this._dialog;
   }
 
@@ -182,7 +191,7 @@ export class DialogRenderable extends BoxRenderable {
 }
 
 function computeBackdropColor(
-  dialog: Dialog,
+  dialog: InternalDialog,
   containerOptions: DialogContainerOptions,
 ): RGBA {
   const color =
