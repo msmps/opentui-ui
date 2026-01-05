@@ -1,5 +1,30 @@
 # @opentui-ui/dialog
 
+## 0.1.0
+
+### Minor Changes
+
+- [#12](https://github.com/msmps/opentui-ui/pull/12) [`1b54167`](https://github.com/msmps/opentui-ui/commit/1b541674b09f0b669ca2d93bdf8591e4aa3c38ee) Thanks [@msmps](https://github.com/msmps)! - ### Breaking Changes
+
+  - **React content must be a function**: `content: () => <MyDialog />` instead of `content: <MyDialog />`
+  - **Backdrop options moved to top-level**: `backdropColor` and `backdropOpacity` are now on `DialogShowOptions`/`DialogContainerOptions`, not nested in `style`
+  - **Removed `backdropMode`**: Backdrop stacking mode option has been removed
+
+  ### Bug Fixes
+
+  - Fixed `confirm()` and `choice()` ignoring `fallback` option in core
+  - Fixed `ChoiceOptions<K>` generic type not properly typing `fallback`
+  - Fixed focus restore timing when rapidly opening/closing dialogs
+
+  ### Improvements
+
+  - Added missing exports
+  - Per-dialog `closeOnEscape` option now supported
+
+  ***
+
+  ⚠️ **Migration**: See the [README](https://github.com/msmps/opentui-ui/blob/main/packages/dialog/README.md) for updated usage examples. While this release contains breaking changes, we're still in early development (0.x). The API is now stabilized and no further breaking changes are planned.
+
 ## 0.0.5
 
 ### Patch Changes
