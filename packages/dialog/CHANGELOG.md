@@ -1,10 +1,17 @@
 # @opentui-ui/dialog
 
+## 0.1.1
+
+### Patch Changes
+
+- [#14](https://github.com/msmps/opentui-ui/pull/14) [`9cb6d5e`](https://github.com/msmps/opentui-ui/commit/9cb6d5e341dc26a604c4eb5a9a417cb7a2ff73fc) Thanks [@msmps](https://github.com/msmps)! - fix: resolve flashing issues in react adapter
+
 ## 0.1.0
 
 ### Minor Changes
 
 - [#12](https://github.com/msmps/opentui-ui/pull/12) [`1b54167`](https://github.com/msmps/opentui-ui/commit/1b541674b09f0b669ca2d93bdf8591e4aa3c38ee) Thanks [@msmps](https://github.com/msmps)!
+
   ### Breaking Changes
 
   - **React content must be a function**: `content: () => <MyDialog />` instead of `content: <MyDialog />`
