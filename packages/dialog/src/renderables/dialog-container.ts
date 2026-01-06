@@ -53,6 +53,8 @@ export class DialogContainerRenderable extends BoxRenderable {
       zIndex: DIALOG_Z_INDEX,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor: "transparent",
+      visible: false,
     });
 
     this._manager = options.manager;
@@ -68,10 +70,6 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._ctx.keyInput.on("keypress", this.handleKeyboard);
 
     this.subscribe();
-
-    // Start invisible - only become visible when dialogs are shown
-    // Without this, the container intercepts all mouse events even with no dialogs
-    this.visible = false;
   }
 
   private subscribe(): void {
