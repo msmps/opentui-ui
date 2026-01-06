@@ -53,6 +53,8 @@ export class DialogContainerRenderable extends BoxRenderable {
       zIndex: DIALOG_Z_INDEX,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor: "transparent",
+      visible: false,
     });
 
     this._manager = options.manager;
@@ -210,7 +212,9 @@ export class DialogContainerRenderable extends BoxRenderable {
   }
 
   private updateBackdropVisibility(): void {
-    this._backdrop.visible = this._dialogRenderables.size > 0;
+    const hasDialogs = this._dialogRenderables.size > 0;
+    this._backdrop.visible = hasDialogs;
+    this.visible = hasDialogs;
   }
 
   private updateBackdropStyle(): void {
