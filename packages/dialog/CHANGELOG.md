@@ -1,5 +1,11 @@
 # @opentui-ui/dialog
 
+## 0.1.2
+
+### Patch Changes
+
+- [#17](https://github.com/msmps/opentui-ui/pull/17) [`2c58639`](https://github.com/msmps/opentui-ui/commit/2c5863959036229bb2dd01f6168842e574103d7f) Thanks [@ainergiz](https://github.com/ainergiz)! - fix: ensures that the container does not intercept mouse events when no dialogs are displayed
+
 ## 0.1.1
 
 ### Patch Changes
