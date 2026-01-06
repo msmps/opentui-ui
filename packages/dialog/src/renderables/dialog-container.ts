@@ -68,6 +68,10 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._ctx.keyInput.on("keypress", this.handleKeyboard);
 
     this.subscribe();
+
+    // Start invisible - only become visible when dialogs are shown
+    // Without this, the container intercepts all mouse events even with no dialogs
+    this.visible = false;
   }
 
   private subscribe(): void {
@@ -210,7 +214,9 @@ export class DialogContainerRenderable extends BoxRenderable {
   }
 
   private updateBackdropVisibility(): void {
-    this._backdrop.visible = this._dialogRenderables.size > 0;
+    const hasDialogs = this._dialogRenderables.size > 0;
+    this._backdrop.visible = hasDialogs;
+    this.visible = hasDialogs;
   }
 
   private updateBackdropStyle(): void {
