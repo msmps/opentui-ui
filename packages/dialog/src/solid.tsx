@@ -440,10 +440,10 @@ export function DialogProvider(props: ParentProps<DialogProviderProps>) {
       if (contentAccessor !== undefined) {
         const cached = portalItemCache.get(id);
         const shouldUpdateCachedItem =
-          !cached || cached.mount !== dialogRenderable.contentBox;
+          !cached || cached.mount !== dialogRenderable;
 
         const item: PortalItem = shouldUpdateCachedItem
-          ? { id, contentAccessor, mount: dialogRenderable.contentBox }
+          ? { id, contentAccessor, mount: dialogRenderable }
           : cached;
 
         if (shouldUpdateCachedItem) {

@@ -103,7 +103,6 @@ export class DialogManager {
   private ctx: RenderContext;
   private focusRestoreTimeout?: ReturnType<typeof setTimeout>;
   private destroyed = false;
-  private _version = 0;
 
   constructor(ctx: RenderContext) {
     this.ctx = ctx;
@@ -152,7 +151,6 @@ export class DialogManager {
   }
 
   private publish(data: Dialog | DialogToClose): void {
-    this._version++;
     for (const subscriber of this.subscribers) {
       try {
         subscriber(data);
@@ -160,14 +158,6 @@ export class DialogManager {
         console.error("[@opentui-ui/dialog] Subscriber threw an error:", error);
       }
     }
-  }
-
-  /**
-   * Get the current state version. Increments on every state change.
-   * Useful for external store integrations (e.g., React's useSyncExternalStore).
-   */
-  get version(): number {
-    return this._version;
   }
 
   private addDialog(data: Dialog): void {

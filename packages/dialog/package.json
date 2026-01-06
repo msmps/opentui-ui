@@ -51,9 +51,9 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@opentui/core": "^0.1.65",
-    "@opentui/react": "^0.1.65",
-    "@opentui/solid": "^0.1.65",
+    "@opentui/core": "^0.1.69",
+    "@opentui/react": "^0.1.69",
+    "@opentui/solid": "^0.1.69",
     "@opentui-ui/utils": "workspace:^",
     "@types/bun": "latest",
     "@types/react": "^19",
@@ -66,9 +66,9 @@
     "solid-js": "1.9.9"
   },
   "peerDependencies": {
-    "@opentui/core": "^0.1.65",
-    "@opentui/react": "^0.1.65",
-    "@opentui/solid": "^0.1.65"
+    "@opentui/core": "^0.1.69",
+    "@opentui/react": "^0.1.69",
+    "@opentui/solid": "^0.1.69"
   },
   "peerDependenciesMeta": {
     "@opentui/react": {

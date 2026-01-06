@@ -9,6 +9,7 @@ import type {
   InternalDialog,
 } from "../types";
 import { isDialogToClose } from "../types";
+import { BackdropRenderable } from "./backdrop";
 import { DialogRenderable } from "./dialog";
 
 export interface DialogContainerRenderableOptions
@@ -36,6 +37,7 @@ export interface DialogKeyboardEvent {
 export class DialogContainerRenderable extends BoxRenderable {
   private _manager: DialogManager;
   private _options: DialogContainerOptions;
+  private _backdrop: BackdropRenderable;
   private _dialogRenderables: Map<DialogId, DialogRenderable> = new Map();
   private _unsubscribe: (() => void) | null = null;
   private _destroyed: boolean = false;
@@ -56,6 +58,12 @@ export class DialogContainerRenderable extends BoxRenderable {
     this._manager = options.manager;
     const { manager: _, ...containerOptions } = options;
     this._options = containerOptions;
+
+    this._backdrop = new BackdropRenderable(ctx, {
+      containerOptions: this._options,
+      onClick: () => this.handleBackdropClick(),
+    });
+    this.add(this._backdrop);
 
     this._ctx.keyInput.on("keypress", this.handleKeyboard);
 
@@ -128,11 +136,13 @@ export class DialogContainerRenderable extends BoxRenderable {
     const dialogRenderable = new DialogRenderable(this.ctx, {
       dialog,
       containerOptions: this._options,
-      onRequestClose: (id) => this._manager.close(id),
     });
 
     this._dialogRenderables.set(dialog.id, dialogRenderable);
     this.add(dialogRenderable);
+
+    this.updateBackdropVisibility();
+    this.updateBackdropStyle();
 
     this.requestRender();
   }
@@ -143,6 +153,10 @@ export class DialogContainerRenderable extends BoxRenderable {
       this._dialogRenderables.delete(id);
       this.remove(renderable.id);
       renderable.destroyRecursively();
+
+      this.updateBackdropVisibility();
+      this.updateBackdropStyle();
+
       this.requestRender();
     }
   }
@@ -153,6 +167,9 @@ export class DialogContainerRenderable extends BoxRenderable {
     // Update container dimensions
     this.width = width;
     this.height = h;
+
+    // Update backdrop dimensions
+    this._backdrop.updateDimensions(width, h);
 
     // Update dialog dimensions
     for (const [, renderable] of this._dialogRenderables) {
@@ -182,10 +199,39 @@ export class DialogContainerRenderable extends BoxRenderable {
 
   public set backdropColor(value: string) {
     this._options.backdropColor = value;
+    this._backdrop.updateContainerOptions(this._options);
+    this.updateBackdropStyle();
   }
 
   public set backdropOpacity(value: number | string) {
     this._options.backdropOpacity = value;
+    this._backdrop.updateContainerOptions(this._options);
+    this.updateBackdropStyle();
+  }
+
+  private updateBackdropVisibility(): void {
+    this._backdrop.visible = this._dialogRenderables.size > 0;
+  }
+
+  private updateBackdropStyle(): void {
+    const topDialog = this.getTopDialogRenderable();
+    this._backdrop.updateStyle(topDialog?.dialog);
+  }
+
+  private handleBackdropClick(): void {
+    const topDialog = this.getTopDialogRenderable();
+    if (!topDialog) return;
+
+    // Call per-dialog callback first
+    topDialog.dialog.onBackdropClick?.();
+
+    // Check per-dialog setting, fall back to container setting
+    const closeOnClickOutside =
+      topDialog.dialog.closeOnClickOutside ?? this._options.closeOnClickOutside;
+
+    if (closeOnClickOutside === true) {
+      this._manager.close(topDialog.dialog.id);
+    }
   }
 
   public set unstyled(value: boolean) {
@@ -206,6 +252,9 @@ export class DialogContainerRenderable extends BoxRenderable {
       renderable.destroyRecursively();
     }
     this._dialogRenderables.clear();
+
+    // Clean up backdrop
+    this._backdrop.destroyRecursively();
 
     super.destroy();
   }

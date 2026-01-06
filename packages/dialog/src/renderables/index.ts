@@ -1,3 +1,7 @@
+export {
+  BackdropRenderable,
+  type BackdropRenderableOptions,
+} from "./backdrop";
 export { DialogRenderable, type DialogRenderableOptions } from "./dialog";
 export {
   DialogContainerRenderable,

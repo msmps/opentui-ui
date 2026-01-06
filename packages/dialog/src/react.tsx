@@ -363,8 +363,15 @@ export function DialogProvider(props: DialogProviderProps) {
       }),
   );
 
+  const dialogs = useSyncExternalStore(
+    (onStoreChange) => manager.subscribe(onStoreChange),
+    () => manager.getDialogs(),
+    () => manager.getDialogs(),
+  );
+
   useEffect(() => {
     renderer.root.add(container);
+
     return () => {
       container.destroyRecursively();
       renderer.root.remove(container.id);
@@ -372,50 +379,44 @@ export function DialogProvider(props: DialogProviderProps) {
     };
   }, [container, manager, renderer]);
 
-  const subscribe = useMemo(
-    () => (onStoreChange: () => void) => manager.subscribe(onStoreChange),
-    [manager],
-  );
-
-  const storeVersion = useSyncExternalStore(
-    subscribe,
-    () => manager.version,
-    () => manager.version,
-  );
-
   useEffect(() => {
     container.updateDimensions(dimensions.width);
   }, [container, dimensions.width]);
 
-  useLayoutEffect(() => {
-    void storeVersion;
-
-    const dialogRenderables = container.getDialogRenderables();
-
-    for (const [, dialogRenderable] of dialogRenderables) {
-      // Set content box visible after React has injected portal content
-      dialogRenderable.contentBox.visible = true;
+  const portals = useMemo(() => {
+    if (!dialogs || dialogs.length === 0) {
+      return [];
     }
-  }, [storeVersion, container]);
-
-  const { portals } = useMemo(() => {
-    // storeVersion is used to trigger recomputation when dialog state changes
-    void storeVersion;
 
     const portals: ReactNode[] = [];
-    const dialogRenderables = container.getDialogRenderables();
 
-    for (const [id, dialogRenderable] of dialogRenderables) {
+    for (const [id, dialogRenderable] of container.getDialogRenderables()) {
       const dialogWithJsx = dialogRenderable.dialog as DialogWithJsx;
       const jsxContent = dialogWithJsx[JSX_CONTENT_KEY];
 
       if (jsxContent !== undefined) {
-        portals.push(createPortal(jsxContent, dialogRenderable.contentBox, id));
+        portals.push(createPortal(jsxContent, dialogRenderable, id));
       }
     }
 
-    return { portals };
-  }, [container, storeVersion]);
+    return portals;
+  }, [container, dialogs]);
+
+  // Set dialog visibility
+  // requestAnimationFrame is polyfilled by @opentui/core
+  useLayoutEffect(() => {
+    // dialogs triggers re-run when dialog state changes
+    void dialogs;
+
+    const raf = (globalThis as Record<string, unknown>)
+      .requestAnimationFrame as (callback: () => void) => number;
+
+    for (const [, dialogRenderable] of container.getDialogRenderables()) {
+      raf(() => {
+        dialogRenderable.visible = true;
+      });
+    }
+  }, [container, dialogs]);
 
   return (
     <DialogContext.Provider value={manager}>
