@@ -538,6 +538,29 @@ Get all currently active toasts.
 
 Get all toasts ever created (including dismissed).
 
+### Queue Management
+
+Control how many toasts are visible at once:
+
+```ts
+toast.setLimit(3);      // Max 3 visible toasts (others queue)
+toast.getLimit();       // Get current limit
+toast.getQueue();       // Get queued toasts waiting to show
+toast.cleanQueue();     // Clear queued toasts (keeps visible)
+```
+
+### Custom Store
+
+Create isolated toast stores for testing or multiple toaster instances:
+
+```ts
+import { createToastStore } from "@opentui-ui/toast";
+
+const myStore = createToastStore();
+myStore.success("Isolated toast!");
+myStore.setLimit(2);
+```
+
 ### Toast Options
 
 | Option        | Type                       | Default    | Description                        |

@@ -117,6 +117,8 @@ Keyboard Controls:
   p - Promise toast (simulated async)
   u - Update last toast
   d - Dismiss all toasts
+  c - Clean queue (remove queued toasts)
+  l - Toggle limit (3 vs unlimited)
   
   t - Cycle themes (Custom -> Minimal -> Monochrome)
   i - Cycle icon sets (Default -> Emoji -> ASCII)
@@ -305,6 +307,20 @@ function handleKeyPress(key: KeyEvent): void {
       updateStatus();
       toast.info(`Stacking: ${stackingMode}`);
       break;
+
+    case "c":
+      // Clean queue - remove queued (non-visible) toasts
+      toast.cleanQueue();
+      break;
+
+    case "l": {
+      // Toggle toast limit
+      const currentLimit = toast.getLimit();
+      const newLimit = currentLimit === 3 ? Infinity : 3;
+      toast.setLimit(newLimit);
+      toast.info(`Limit: ${newLimit === Infinity ? "unlimited" : newLimit}`);
+      break;
+    }
 
     case "q":
       renderer?.destroy();
