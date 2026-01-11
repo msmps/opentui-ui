@@ -28,6 +28,8 @@ export type {
   BaseConfirmOptions,
   BaseDialogActions,
   BasePromptOptions,
+  ContextDialogFactory,
+  ContextDialogProps,
   Dialog,
   DialogContainerOptions,
   DialogContentFactory,
@@ -36,5 +38,7 @@ export type {
   DialogSize,
   DialogStyle,
   DialogToClose,
+  DialogUpdated,
+  OpenContextDialogOptions,
 } from "./types";
-export { isDialogToClose } from "./types";
+export { isDialogToClose, isDialogUpdated } from "./types";
