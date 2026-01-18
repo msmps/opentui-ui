@@ -34,11 +34,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  *
  * @example
  * ```ts
- * mergeStyle({ fg: "white", bg: "black" }, { fg: "green" })
- * // => { fg: "green", bg: "black" }
+ * mergeStyle({ color: "white", backgroundColor: "black" }, { color: "green" })
+ * // => { color: "green", backgroundColor: "black" }
  *
- * mergeStyle({ fg: "white" }, { fg: undefined, bg: "blue" })
- * // => { fg: "white", bg: "blue" }
+ * mergeStyle({ color: "white" }, { color: undefined, backgroundColor: "blue" })
+ * // => { color: "white", backgroundColor: "blue" }
  * ```
  */
 export function mergeStyle<T extends Record<string, unknown>>(
@@ -71,12 +71,12 @@ export function mergeStyle<T extends Record<string, unknown>>(
  * @example
  * ```ts
  * mergeSlotStyles(
- *   { root: { fg: "white" }, label: { fg: "gray" } },
- *   { root: { fg: "green", _checked: { fg: "blue" } } }
+ *   { root: { color: "white" }, label: { color: "gray" } },
+ *   { root: { color: "green", _checked: { color: "blue" } } }
  * )
  * // => {
- * //   root: { fg: "green", _checked: { fg: "blue" } },
- * //   label: { fg: "gray" }
+ * //   root: { color: "green", _checked: { color: "blue" } },
+ * //   label: { color: "gray" }
  * // }
  * ```
  */
@@ -191,25 +191,25 @@ function mergeSlotStyleWithSelectors(
  * ```ts
  * // Base component
  * const base = {
- *   base: { root: { fg: "white" } },
- *   variants: { intent: { primary: { root: { fg: "blue" } } } },
+ *   base: { root: { color: "white" } },
+ *   variants: { intent: { primary: { root: { color: "blue" } } } },
  *   defaultVariants: { intent: "primary" }
  * };
  *
  * // Override
  * const override = {
- *   base: { root: { bg: "black" } },
- *   variants: { intent: { danger: { root: { fg: "red" } } } },
+ *   base: { root: { backgroundColor: "black" } },
+ *   variants: { intent: { danger: { root: { color: "red" } } } },
  *   defaultVariants: { intent: "danger" }
  * };
  *
  * mergeStyledConfig(base, override)
  * // => {
- * //   base: { root: { fg: "white", bg: "black" } },
+ * //   base: { root: { color: "white", backgroundColor: "black" } },
  * //   variants: {
  * //     intent: {
- * //       primary: { root: { fg: "blue" } },
- * //       danger: { root: { fg: "red" } }
+ * //       primary: { root: { color: "blue" } },
+ * //       danger: { root: { color: "red" } }
  * //     }
  * //   },
  * //   defaultVariants: { intent: "danger" }

@@ -14,9 +14,9 @@ import type {
 } from "./types";
 
 const DEFAULT_SLOT_STYLES: CheckboxSlotStyles = {
-  box: { bg: "transparent" },
-  mark: { fg: "#A3A3A3" },
-  label: { fg: "#A3A3A3" },
+  box: { backgroundColor: "transparent" },
+  mark: { color: "#A3A3A3" },
+  label: { color: "#A3A3A3" },
 };
 
 export class CheckboxRenderable extends StyledRenderable<
@@ -106,17 +106,17 @@ export class CheckboxRenderable extends StyledRenderable<
     const labelStyles = styles.label ?? {};
 
     this._parsedColors = {
-      boxBg: parseColor(boxStyles.bg ?? "transparent"),
-      markFg: parseColor(markStyles.fg ?? "#A3A3A3"),
-      labelFg: parseColor(labelStyles.fg ?? "#A3A3A3"),
+      boxBg: parseColor(boxStyles.backgroundColor ?? "transparent"),
+      markFg: parseColor(markStyles.color ?? "#A3A3A3"),
+      labelFg: parseColor(labelStyles.color ?? "#A3A3A3"),
     };
   }
 
   private getColorCacheKey(): string {
     const styles = this.getResolvedStyles();
-    const boxBg = styles.box?.bg ?? "transparent";
-    const markFg = styles.mark?.fg ?? "#A3A3A3";
-    const labelFg = styles.label?.fg ?? "#A3A3A3";
+    const boxBg = styles.box?.backgroundColor ?? "transparent";
+    const markFg = styles.mark?.color ?? "#A3A3A3";
+    const labelFg = styles.label?.color ?? "#A3A3A3";
 
     return `${boxBg}|${markFg}|${labelFg}`;
   }

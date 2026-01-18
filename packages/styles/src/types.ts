@@ -131,7 +131,7 @@ export type StateSelectorStyles<
 
 /**
  * A single slot's style with optional state selectors.
- * E.g., { fg: "white", _checked: { fg: "green" } }
+ * E.g., { color: "white", _checked: { color: "green" } }
  */
 export type ConditionalSlotStyle<
   Style extends object,
@@ -140,7 +140,7 @@ export type ConditionalSlotStyle<
 
 /**
  * Full slot styles for all slots, each supporting state selectors.
- * E.g., { root: { fg: "white", _checked: { fg: "green" } }, label: { fg: "gray" } }
+ * E.g., { root: { color: "white", _checked: { color: "green" } }, label: { color: "gray" } }
  */
 export type StyledSlotStyles<
   SlotStyleMap extends Record<string, object>,
