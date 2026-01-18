@@ -1,6 +1,6 @@
 {
   "name": "@opentui-ui/solid",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Solid bindings for OpenTUI UI components",
   "author": "Matt Simpson",
   "license": "MIT",
