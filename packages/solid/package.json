@@ -1,10 +1,13 @@
 {
   "name": "@opentui-ui/solid",
   "version": "0.0.1",
-  "description": "Solid headless bindings for OpenTUI UI components",
+  "description": "Solid bindings for OpenTUI UI components",
   "author": "Matt Simpson",
   "license": "MIT",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/badge/**",
+    "./dist/checkbox/**"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/msmps/opentui-ui.git",
@@ -15,42 +18,27 @@
     ".": "./src/index.ts",
     "./badge": "./src/badge/index.tsx",
     "./checkbox": "./src/checkbox/index.tsx",
-    "./styled": "./src/styled.ts",
-    "./headless": "./src/headless/index.ts",
-    "./headless/badge": "./src/headless/badge/index.tsx",
-    "./headless/checkbox": "./src/headless/checkbox/index.tsx"
+    "./styled": "./src/styled.ts"
   },
   "publishConfig": {
     "main": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
+    "types": "./dist/index.d.mts",
     "exports": {
       ".": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.mts",
         "import": "./dist/index.mjs"
       },
       "./badge": {
-        "types": "./dist/badge/index.d.ts",
+        "types": "./dist/badge/index.d.mts",
         "import": "./dist/badge/index.mjs"
       },
       "./checkbox": {
-        "types": "./dist/checkbox/index.d.ts",
+        "types": "./dist/checkbox/index.d.mts",
         "import": "./dist/checkbox/index.mjs"
       },
       "./styled": {
-        "types": "./dist/styled.d.ts",
+        "types": "./dist/styled.d.mts",
         "import": "./dist/styled.mjs"
-      },
-      "./headless": {
-        "types": "./dist/headless/index.d.ts",
-        "import": "./dist/headless/index.mjs"
-      },
-      "./headless/badge": {
-        "types": "./dist/headless/badge/index.d.ts",
-        "import": "./dist/headless/badge/index.mjs"
-      },
-      "./headless/checkbox": {
-        "types": "./dist/headless/checkbox/index.d.ts",
-        "import": "./dist/headless/checkbox/index.mjs"
       }
     }
   },

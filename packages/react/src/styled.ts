@@ -101,7 +101,7 @@ interface StyledReactComponent<
  * @example
  * ```tsx
  * import { styled } from "@opentui-ui/react/styled";
- * import { Checkbox } from "@opentui-ui/react/headless";
+ * import { Checkbox } from "@opentui-ui/react/checkbox";
  *
  * const MyCheckbox = styled(Checkbox, {
  *   base: {

@@ -18,18 +18,18 @@
   },
   "publishConfig": {
     "main": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
+    "types": "./dist/index.d.mts",
     "exports": {
       ".": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.mts",
         "import": "./dist/index.mjs"
       },
       "./badge": {
-        "types": "./dist/badge/index.d.ts",
+        "types": "./dist/badge/index.d.mts",
         "import": "./dist/badge/index.mjs"
       },
       "./checkbox": {
-        "types": "./dist/checkbox/index.d.ts",
+        "types": "./dist/checkbox/index.d.mts",
         "import": "./dist/checkbox/index.mjs"
       }
     }

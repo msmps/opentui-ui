@@ -91,7 +91,7 @@ interface StyledSolidComponent<
  * @example
  * ```tsx
  * import { styled } from "@opentui-ui/solid/styled";
- * import { Checkbox } from "@opentui-ui/solid/headless";
+ * import { Checkbox } from "@opentui-ui/solid/checkbox";
  *
  * const MyCheckbox = styled(Checkbox, {
  *   base: {

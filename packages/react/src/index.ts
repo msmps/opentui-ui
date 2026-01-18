@@ -4,3 +4,7 @@ export {
   CHECKBOX_SLOTS,
   type CheckboxSlotStyleMap,
 } from "@opentui-ui/core/checkbox";
+
+// Re-export components
+export * from "./badge";
+export * from "./checkbox";
