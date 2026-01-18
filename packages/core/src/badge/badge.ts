@@ -4,7 +4,6 @@ import {
   type RenderContext,
 } from "@opentui/core";
 import { StyledRenderable } from "../styled-renderable";
-import { validateStringLength } from "../validation";
 import { DEFAULT_BADGE_OPTIONS } from "./constants";
 import type { BadgeOptions, BadgeSlotStyles, BadgeState } from "./types";
 
@@ -28,8 +27,6 @@ export class BadgeRenderable extends StyledRenderable<
   private _label: string;
 
   constructor(ctx: RenderContext, options: BadgeOptions = {}) {
-    validateStringLength(options.label, 100, "label");
-
     const initialStyles =
       options.styles ?? options?.styleResolver?.({}) ?? DEFAULT_SLOT_STYLES;
     const rootStyles = initialStyles.root ?? {};

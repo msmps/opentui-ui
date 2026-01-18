@@ -5,7 +5,6 @@ import {
   type RenderContext,
 } from "@opentui/core";
 import { StyledRenderable } from "../styled-renderable";
-import { validateNonEmptyString, validateStringLength } from "../validation";
 import { DEFAULT_CHECKBOX_OPTIONS } from "./constants";
 import type {
   CheckboxOptions,
@@ -45,10 +44,6 @@ export class CheckboxRenderable extends StyledRenderable<
   protected _defaultOptions = DEFAULT_CHECKBOX_OPTIONS;
 
   constructor(ctx: RenderContext, options: CheckboxOptions = {}) {
-    validateStringLength(options.label, 200, "label");
-    validateNonEmptyString(options.symbols?.checked, "symbols.checked");
-    validateNonEmptyString(options.symbols?.unchecked, "symbols.unchecked");
-
     const symbols: CheckboxSymbolSet = {
       ...DEFAULT_CHECKBOX_OPTIONS.symbols,
       ...options.symbols,
