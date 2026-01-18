@@ -1,4 +1,4 @@
-# dependencies (bun install)
+# dependencies (pnpm install)
 node_modules
 
 # output
@@ -37,4 +37,12 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .turbo
 
 # Miscellaneous
+.opencode/
 .knowledge
+docs/
+
+# examples
+examples/
+
+# benchmarks
+benchmarks

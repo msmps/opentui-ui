@@ -19,12 +19,6 @@ import type {
 
 type DialogSubscriber = (data: Dialog | DialogToClose) => void;
 
-// ============================================================================
-// Core Prompt Types (for imperative/non-framework usage)
-// ============================================================================
-// These extend the generic base types with core-specific content signatures.
-// Core content functions receive both the context and RenderContext.
-
 /** Content factory for prompt dialogs. */
 type PromptContent<T> = (
   renderCtx: RenderContext,
@@ -320,13 +314,8 @@ export class DialogManager {
     return this.dialogs.length > 0;
   }
 
-  // ===========================================================================
-  // Async Dialog Helpers
-  // ===========================================================================
-
   /**
    * Builds DialogShowOptions from either a factory function or a CoreOptions object.
-   * Used by confirm, alert, and choice methods to reduce duplication.
    */
   private buildShowOptions<
     TCtx,
@@ -393,10 +382,6 @@ export class DialogManager {
       });
     });
   }
-
-  // ===========================================================================
-  // Async Prompt Methods
-  // ===========================================================================
 
   /**
    * Show a generic prompt dialog and wait for a response.

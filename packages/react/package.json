@@ -1,0 +1,95 @@
+{
+  "name": "@opentui-ui/react",
+  "version": "0.0.1",
+  "description": "React headless bindings for OpenTUI UI components",
+  "author": "Matt Simpson",
+  "license": "MIT",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msmps/opentui-ui.git",
+    "directory": "packages/react"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./badge": "./src/badge/index.tsx",
+    "./checkbox": "./src/checkbox/index.tsx",
+    "./styled": "./src/styled.ts",
+    "./headless": "./src/headless/index.ts",
+    "./headless/badge": "./src/headless/badge/index.tsx",
+    "./headless/checkbox": "./src/headless/checkbox/index.tsx"
+  },
+  "publishConfig": {
+    "main": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.mjs"
+      },
+      "./badge": {
+        "types": "./dist/badge/index.d.ts",
+        "import": "./dist/badge/index.mjs"
+      },
+      "./checkbox": {
+        "types": "./dist/checkbox/index.d.ts",
+        "import": "./dist/checkbox/index.mjs"
+      },
+      "./styled": {
+        "types": "./dist/styled.d.ts",
+        "import": "./dist/styled.mjs"
+      },
+      "./headless": {
+        "types": "./dist/headless/index.d.ts",
+        "import": "./dist/headless/index.mjs"
+      },
+      "./headless/badge": {
+        "types": "./dist/headless/badge/index.d.ts",
+        "import": "./dist/headless/badge/index.mjs"
+      },
+      "./headless/checkbox": {
+        "types": "./dist/headless/checkbox/index.d.ts",
+        "import": "./dist/headless/checkbox/index.mjs"
+      }
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/msmps/opentui-ui/issues"
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/msmps/opentui-ui#readme",
+  "keywords": [
+    "react",
+    "ui",
+    "components",
+    "tui",
+    "terminal",
+    "cli",
+    "opentui"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opentui-ui/core": "workspace:^",
+    "@opentui-ui/styles": "workspace:^"
+  },
+  "devDependencies": {
+    "@opentui/core": "catalog:",
+    "@opentui/react": "catalog:",
+    "@types/react": "^19",
+    "react": "^19.2.3",
+    "tsdown": "^0.18.2",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "@opentui/core": "catalog:",
+    "@opentui/react": "catalog:",
+    "react": "^18.0.0 || ^19.0.0"
+  }
+}

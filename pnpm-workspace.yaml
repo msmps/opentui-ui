@@ -1,0 +1,8 @@
+packages:
+  - "packages/*"
+  - "examples/*"
+
+catalog:
+  "@opentui/core": "^0.1.69"
+  "@opentui/react": "^0.1.69"
+  "@opentui/solid": "^0.1.69"

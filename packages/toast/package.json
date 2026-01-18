@@ -53,29 +53,34 @@
   ],
   "scripts": {
     "build": "tsdown",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@opentui/core": "^0.1.63",
-    "@opentui/react": "^0.1.63",
-    "@opentui/solid": "^0.1.63",
+    "@opentui/core": "catalog:",
+    "@opentui/react": "catalog:",
+    "@opentui/solid": "catalog:",
     "@opentui-ui/utils": "workspace:^",
-    "@types/bun": "latest",
     "@types/react": "^19.2.7",
     "react": "^19.2.3",
+    "solid-js": "^1.9.9",
     "tsdown": "^0.18.2",
     "typescript": "^5"
   },
   "peerDependencies": {
-    "@opentui/core": "^0.1.63",
-    "@opentui/react": "^0.1.63",
-    "@opentui/solid": "^0.1.63"
+    "@opentui/core": "catalog:",
+    "@opentui/react": "catalog:",
+    "@opentui/solid": "catalog:",
+    "solid-js": "^1.9.9"
   },
   "peerDependenciesMeta": {
     "@opentui/react": {
       "optional": true
     },
     "@opentui/solid": {
+      "optional": true
+    },
+    "solid-js": {
       "optional": true
     }
   }

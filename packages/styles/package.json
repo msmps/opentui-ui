@@ -1,37 +1,26 @@
 {
-  "name": "@opentui-ui/utils",
+  "name": "@opentui-ui/styles",
   "version": "0.0.1",
-  "description": "Shared utilities and types for OpenTUI UI components",
+  "description": "Styling engine for OpenTUI UI components with type-safe variants and composition",
   "author": "Matt Simpson",
   "license": "MIT",
   "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/msmps/opentui-ui.git",
-    "directory": "packages/utils"
+    "directory": "packages/styles"
   },
   "type": "module",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    },
-    "./types": {
-      "types": "./src/types/index.ts",
-      "import": "./src/types/index.ts"
-    }
+    ".": "./src/index.ts"
   },
   "publishConfig": {
+    "main": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
     "exports": {
       ".": {
-        "types": "./dist/index.d.mts",
+        "types": "./dist/index.d.ts",
         "import": "./dist/index.mjs"
-      },
-      "./types": {
-        "types": "./dist/types/index.d.mts",
-        "import": "./dist/types/index.mjs"
       }
     }
   },
@@ -43,8 +32,10 @@
   ],
   "homepage": "https://github.com/msmps/opentui-ui#readme",
   "keywords": [
-    "utils",
-    "utilities",
+    "styles",
+    "variants",
+    "ui",
+    "components",
     "tui",
     "terminal",
     "cli",
@@ -56,11 +47,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@opentui/core": "catalog:",
     "tsdown": "^0.18.2",
     "typescript": "^5"
-  },
-  "peerDependencies": {
-    "@opentui/core": "catalog:"
   }
 }
