@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@opentui/core": "catalog:",
+    "@types/bun": "^1",
     "tsdown": "^0.18.2",
     "typescript": "^5"
   },

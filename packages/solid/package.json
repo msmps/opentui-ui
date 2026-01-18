@@ -72,6 +72,7 @@
     "@babel/preset-typescript": "^7.28.5",
     "@opentui/core": "catalog:",
     "@opentui/solid": "catalog:",
+    "@types/bun": "^1",
     "babel-preset-solid": "1.9.9",
     "solid-js": "1.9.9",
     "tsdown": "^0.18.2",
