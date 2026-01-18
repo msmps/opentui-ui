@@ -12,15 +12,15 @@ export interface CheckboxState {
 
 export type CheckboxSlotStyleMap = {
   box: {
-    fg?: Color;
-    bg?: Color;
+    color?: Color;
+    backgroundColor?: Color;
     gap?: number;
   };
   mark: {
-    fg?: Color;
+    color?: Color;
   };
   label: {
-    fg?: Color;
+    color?: Color;
   };
 };
 

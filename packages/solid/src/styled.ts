@@ -95,13 +95,13 @@ interface StyledSolidComponent<
  *
  * const MyCheckbox = styled(Checkbox, {
  *   base: {
- *     root: { fg: "white" },
- *     mark: { fg: "blue" },
+ *     root: { color: "white" },
+ *     mark: { color: "blue" },
  *   },
  *   variants: {
  *     intent: {
- *       warning: { root: { fg: "orange" } },
- *       danger: { root: { fg: "red" } },
+ *       warning: { root: { color: "orange" } },
+ *       danger: { root: { color: "red" } },
  *     },
  *   },
  *   defaultVariants: { intent: "warning" },

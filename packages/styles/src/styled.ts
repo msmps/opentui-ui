@@ -84,11 +84,11 @@ export interface StyledComponentDefinition<
  * ```ts
  * // Framework-agnostic definition
  * const definition = createStyled(Checkbox, {
- *   base: { root: { fg: "white" } },
+ *   base: { root: { color: "white" } },
  *   variants: {
  *     intent: {
- *       warning: { root: { fg: "orange" } },
- *       danger: { root: { fg: "red" } }
+ *       warning: { root: { color: "orange" } },
+ *       danger: { root: { color: "red" } }
  *     }
  *   },
  *   defaultVariants: { intent: "warning" }

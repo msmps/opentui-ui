@@ -48,7 +48,7 @@ type StyledComponentProps<
      *
      * Note: For optimal performance, memoize this prop if passing dynamic objects:
      * ```tsx
-     * const styles = useMemo(() => ({ root: { fg: "red" } }), []);
+     * const styles = useMemo(() => ({ root: { color: "red" } }), []);
      * <MyCheckbox styles={styles} />
      * ```
      */
@@ -105,13 +105,13 @@ interface StyledReactComponent<
  *
  * const MyCheckbox = styled(Checkbox, {
  *   base: {
- *     root: { fg: "white" },
- *     mark: { fg: "blue" },
+ *     root: { color: "white" },
+ *     mark: { color: "blue" },
  *   },
  *   variants: {
  *     intent: {
- *       warning: { root: { fg: "orange" } },
- *       danger: { root: { fg: "red" } },
+ *       warning: { root: { color: "orange" } },
+ *       danger: { root: { color: "red" } },
  *     },
  *   },
  *   defaultVariants: { intent: "warning" },
