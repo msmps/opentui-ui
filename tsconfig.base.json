@@ -12,7 +12,7 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "noEmit": false,
+    "noEmit": true,
 
     // Best practices
     "strict": true,
@@ -26,10 +26,22 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
 
-    // Miscellaneous
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "declarationMap": true,
-    "sourceMap": false
+    // Path mappings for monorepo packages (resolves to source)
+    "baseUrl": ".",
+    "paths": {
+      "@opentui-ui/core": ["packages/core/src"],
+      "@opentui-ui/react": ["packages/react/src"],
+      "@opentui-ui/react/*": ["packages/react/src/*"],
+      "@opentui-ui/solid": ["packages/solid/src"],
+      "@opentui-ui/solid/*": ["packages/solid/src/*"],
+      "@opentui-ui/styles": ["packages/styles/src"],
+      "@opentui-ui/styles/*": ["packages/styles/src/*"],
+      "@opentui-ui/utils": ["packages/utils/src"],
+      "@opentui-ui/utils/*": ["packages/utils/src/*"],
+      "@opentui-ui/dialog": ["packages/dialog/src"],
+      "@opentui-ui/dialog/*": ["packages/dialog/src/*"],
+      "@opentui-ui/toast": ["packages/toast/src"],
+      "@opentui-ui/toast/*": ["packages/toast/src/*"]
+    }
   }
 }
