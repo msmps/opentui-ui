@@ -1,6 +1,6 @@
 {
   "name": "@opentui-ui/styles",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Styling engine for OpenTUI UI components with type-safe variants and composition",
   "author": "Matt Simpson",
   "license": "MIT",
