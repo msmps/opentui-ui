@@ -9,8 +9,8 @@ import type { BadgeOptions, BadgeSlotStyles, BadgeState } from "./types";
 
 const DEFAULT_SLOT_STYLES: BadgeSlotStyles = {
   root: {
-    bg: "transparent",
-    fg: "#E5E5E5",
+    backgroundColor: "transparent",
+    color: "#E5E5E5",
     paddingX: 1,
     paddingY: 0,
   },
@@ -62,8 +62,8 @@ export class BadgeRenderable extends StyledRenderable<
     const styles = this.getResolvedStyles();
     const rootStyles = styles.root ?? {};
     return {
-      rootBg: parseColor(rootStyles.bg ?? "transparent"),
-      rootFg: parseColor(rootStyles.fg ?? "#E5E5E5"),
+      rootBg: parseColor(rootStyles.backgroundColor ?? "transparent"),
+      rootFg: parseColor(rootStyles.color ?? "#E5E5E5"),
     };
   }
 

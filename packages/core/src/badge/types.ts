@@ -7,8 +7,8 @@ export type BadgeSlots = typeof BADGE_SLOTS;
 export type BadgeState = Record<string, never>;
 
 export interface ColorProps {
-  fg?: Color;
-  bg?: Color;
+  color?: Color;
+  backgroundColor?: Color;
 }
 
 export interface PaddingProps {

@@ -215,7 +215,7 @@ function applyLayerStyles<
  * Flattens a slot's conditional styles into the result based on current state.
  *
  * "Flattening" means:
- * 1. Copy all base properties (non-selector keys like `fg`, `bg`)
+ * 1. Copy all base properties (non-selector keys like `color`, `backgroundColor`)
  * 2. For each active state selector (`:checked`, `:focused`, etc.), merge its styles
  *
  * The order of state keys matters - later selectors override earlier ones.
