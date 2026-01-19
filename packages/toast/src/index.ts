@@ -9,7 +9,7 @@
 // =============================================================================
 
 export { ToasterRenderable } from "./renderables";
-export { toast } from "./state";
+export { createToastStore, toast } from "./state";
 
 // =============================================================================
 // Types - For TypeScript users
