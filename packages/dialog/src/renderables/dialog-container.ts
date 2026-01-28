@@ -8,7 +8,7 @@ import type {
   DialogSize,
   InternalDialog,
 } from "../types";
-import { isDialogToClose } from "../types";
+import { isDialogToClose, isDialogUpdated } from "../types";
 import { BackdropRenderable } from "./backdrop";
 import { DialogRenderable } from "./dialog";
 
@@ -80,6 +80,8 @@ export class DialogContainerRenderable extends BoxRenderable {
 
       if (isDialogToClose(data)) {
         this.removeDialog(data.id);
+      } else if (isDialogUpdated(data)) {
+        this.handleDialogUpdate(data.id);
       } else {
         this.addOrUpdateDialog(data);
       }
@@ -159,6 +161,33 @@ export class DialogContainerRenderable extends BoxRenderable {
       this.updateBackdropVisibility();
       this.updateBackdropStyle();
 
+      this.requestRender();
+    }
+  }
+
+  private handleDialogUpdate(id: DialogId): void {
+    // Get the updated dialog from manager
+    const dialogs = this._manager.getDialogs();
+    const updatedDialog = dialogs.find((d) => d.id === id) as
+      | InternalDialog
+      | undefined;
+    if (!updatedDialog) return;
+
+    const existing = this._dialogRenderables.get(id);
+    if (existing) {
+      // Remove old and create new with updated props
+      this.remove(existing.id);
+      existing.destroyRecursively();
+
+      const dialogRenderable = new DialogRenderable(this.ctx, {
+        dialog: updatedDialog,
+        containerOptions: this._options,
+      });
+
+      this._dialogRenderables.set(id, dialogRenderable);
+      this.add(dialogRenderable);
+
+      this.updateBackdropStyle();
       this.requestRender();
     }
   }

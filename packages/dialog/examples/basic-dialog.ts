@@ -74,6 +74,32 @@ function createUI(rendererInstance: CliRenderer): void {
   });
   renderer.root.add(dialogContainer);
 
+  // Register context dialog template
+  dialogManager.registerContextDialog<{ title: string; message: string }>(
+    "preregistered-info",
+    (ctx, { innerProps, close: _close }) => {
+      const box = new BoxRenderable(ctx, {
+        id: "context-dialog-content",
+        flexDirection: "column",
+        gap: 1,
+      });
+      const titleText = new TextRenderable(ctx, {
+        id: "context-title",
+        content: innerProps.title,
+        fg: "#3498db",
+      });
+      box.add(titleText);
+      const messageText = new TextRenderable(ctx, {
+        id: "context-message",
+        content: `${innerProps.message}\n\nPress ESC to close.`,
+        fg: "#ffffff",
+        wrapMode: "word",
+      });
+      box.add(messageText);
+      return box;
+    },
+  );
+
   // Set up keyboard handler
   renderer.keyInput.on("keypress", handleKeyPress);
 }
@@ -83,8 +109,9 @@ function getHelpText(): string {
 Keyboard Controls:
   1 - Simple dialog          2 - Dialog with long content
   3 - Stacked dialogs        4 - Custom styled dialog
-  5 - MS-DOS style dialog
+  5 - MS-DOS style dialog    6 - Context dialog (pre-registered)
   
+  u - Update top dialog style (demo updateDialog)
   s - Cycle sizes (small -> medium -> large -> full)
   
   Escape - Close top dialog
@@ -370,6 +397,33 @@ Press ESC to close.`,
       });
       updateStatus();
       break;
+
+    case "6":
+      // Context dialog (pre-registered template)
+      dialogManager.openContextDialog("preregistered-info", {
+        innerProps: {
+          title: "Context Dialog",
+          message: "This dialog was opened from a pre-registered template!",
+        },
+        size: sizes[sizeIndex],
+        onClose: () => updateStatus(),
+      });
+      updateStatus();
+      break;
+
+    case "u": {
+      // Update top dialog style
+      const topDialog = dialogManager.getTopDialog();
+      if (topDialog) {
+        dialogManager.updateDialog(topDialog.id, {
+          style: {
+            backgroundColor: "#2d4a3e",
+            borderColor: "#16c79a",
+          },
+        });
+      }
+      break;
+    }
 
     case "s": {
       // Cycle sizes - note: size changes only affect NEW dialogs now

@@ -171,7 +171,66 @@ export interface BaseDialogActions<TShowOptions> {
 }
 
 export function isDialogToClose(
-  value: Dialog | DialogToClose,
+  value: Dialog | DialogToClose | DialogUpdated,
 ): value is DialogToClose {
   return "close" in value && value.close === true;
+}
+
+// =============================================================================
+// Context Dialog Types
+// =============================================================================
+// Context dialogs are pre-registered dialog templates that can be opened by name.
+
+/**
+ * Props passed to context dialog content factories.
+ * @template T The type of innerProps passed when opening the dialog.
+ */
+export interface ContextDialogProps<T = Record<string, unknown>> {
+  /** Custom props passed when opening this context dialog. */
+  innerProps: T;
+  /** The dialog ID for this dialog. */
+  dialogId: DialogId;
+  /** Close this dialog. */
+  close: () => void;
+}
+
+/**
+ * Factory function for creating context dialog content.
+ * @template T The type of innerProps passed when opening the dialog.
+ */
+export type ContextDialogFactory<T = Record<string, unknown>> = (
+  ctx: RenderContext,
+  props: ContextDialogProps<T>,
+) => Renderable;
+
+/**
+ * Options for opening a context dialog.
+ * @template T The type of innerProps for the context dialog.
+ */
+export interface OpenContextDialogOptions<T = Record<string, unknown>>
+  extends AsyncDialogOptions {
+  /** Custom props to pass to the context dialog. */
+  innerProps: T;
+}
+
+/**
+ * Payload for updating an existing dialog's props.
+ */
+export interface DialogUpdatePayload extends Partial<DialogShowOptions> {
+  /** ID of the dialog to update. */
+  id: DialogId;
+}
+
+/**
+ * Event published when a dialog is updated.
+ */
+export interface DialogUpdated {
+  id: DialogId;
+  updated: true;
+}
+
+export function isDialogUpdated(
+  value: Dialog | DialogToClose | DialogUpdated,
+): value is DialogUpdated {
+  return "updated" in value && value.updated === true;
 }

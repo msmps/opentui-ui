@@ -15,9 +15,13 @@ import type {
   DialogId,
   DialogShowOptions,
   DialogToClose,
+  DialogUpdated,
+  OpenContextDialogOptions,
+  ContextDialogFactory,
+  ContextDialogProps,
 } from "./types";
 
-type DialogSubscriber = (data: Dialog | DialogToClose) => void;
+type DialogSubscriber = (data: Dialog | DialogToClose | DialogUpdated) => void;
 
 /** Content factory for prompt dialogs. */
 type PromptContent<T> = (
@@ -97,6 +101,7 @@ export class DialogManager {
   private ctx: RenderContext;
   private focusRestoreTimeout?: ReturnType<typeof setTimeout>;
   private destroyed = false;
+  private contextDialogs = new Map<string, ContextDialogFactory<unknown>>();
 
   constructor(ctx: RenderContext) {
     this.ctx = ctx;
@@ -144,7 +149,7 @@ export class DialogManager {
     };
   }
 
-  private publish(data: Dialog | DialogToClose): void {
+  private publish(data: Dialog | DialogToClose | DialogUpdated): void {
     for (const subscriber of this.subscribers) {
       try {
         subscriber(data);
@@ -313,6 +318,136 @@ export class DialogManager {
   isOpen(): boolean {
     return this.dialogs.length > 0;
   }
+
+  // ===========================================================================
+  // Update Dialog
+  // ===========================================================================
+  /**
+   * Update an existing dialog's props without closing it.
+   *
+   * @returns `true` if the dialog was found and updated, `false` otherwise.
+   *
+   * @example
+   * ```ts
+   * const id = manager.show({ content: (ctx) => ... });
+   *
+   * // Later, update the dialog's style
+   * manager.updateDialog(id, {
+   *   style: { backgroundColor: "#ff0000" },
+   * });
+   * ```
+   */
+  updateDialog(
+    id: DialogId,
+    updates: Partial<Omit<DialogShowOptions, "content" | "id">>,
+  ): boolean {
+    const dialogIndex = this.dialogs.findIndex((d) => d.id === id);
+    if (dialogIndex === -1) {
+      return false;
+    }
+
+    const dialog = this.dialogs[dialogIndex];
+    if (!dialog) {
+      return false;
+    }
+
+    // Merge updates with existing dialog props
+    const updatedDialog: Dialog = {
+      ...dialog,
+      ...updates,
+      // Merge style objects instead of replacing entirely
+      style: updates.style
+        ? { ...dialog.style, ...updates.style }
+        : dialog.style,
+    };
+
+    this.dialogs = [
+      ...this.dialogs.slice(0, dialogIndex),
+      updatedDialog,
+      ...this.dialogs.slice(dialogIndex + 1),
+    ];
+
+    this.publish({ id, updated: true });
+    return true;
+  }
+
+  // ===========================================================================
+  // Context Dialogs
+  // ===========================================================================
+  /**
+   * Register a context dialog factory by name.
+   *
+   * Context dialogs are pre-defined dialog templates that can be opened by name.
+   *
+   * @example
+   * ```ts
+   * manager.registerContextDialog<{ filename: string }>("deleteConfirm", (ctx, { innerProps, close }) => {
+   *   const box = new BoxRenderable(ctx, { flexDirection: "column" });
+   *   box.add(new TextRenderable(ctx, { content: `Delete ${innerProps.filename}?` }));
+   *   const confirmBtn = new TextRenderable(ctx, { content: "Delete" });
+   *   confirmBtn.on("mouseUp", close);
+   *   box.add(confirmBtn);
+   *   return box;
+   * });
+   * ```
+   */
+  registerContextDialog<T>(
+    name: string,
+    factory: ContextDialogFactory<T>,
+  ): void {
+    this.contextDialogs.set(name, factory as ContextDialogFactory<unknown>);
+  }
+
+  /**
+   * Open a registered context dialog by name.
+   *
+   * @returns The dialog ID.
+   * @throws Error if the dialog is not registered.
+   *
+   * @example
+   * ```ts
+   * manager.openContextDialog("deleteConfirm", {
+   *   innerProps: { filename: "document.txt" },
+   *   size: "small",
+   * });
+   * ```
+   */
+  openContextDialog<T>(
+    name: string,
+    options: OpenContextDialogOptions<T>,
+  ): DialogId {
+    const factory = this.contextDialogs.get(name) as
+      | ContextDialogFactory<T>
+      | undefined;
+
+    if (!factory) {
+      throw new Error(
+        `[@opentui-ui/dialog] Context dialog "${name}" is not registered.\n\n` +
+          `Register it first with:\n` +
+          `  manager.registerContextDialog("${name}", (ctx, props) => { ... });`,
+      );
+    }
+
+    const { innerProps, ...dialogOptions } = options;
+    const id = this.idCounter++;
+
+    return this.show({
+      ...dialogOptions,
+      id,
+      content: (ctx) => {
+        const props: ContextDialogProps<T> = {
+          innerProps,
+          dialogId: id,
+          close: () => this.close(id),
+        };
+        return factory(ctx, props);
+      },
+    });
+  }
+
+  // ===========================================================================
+  // Async Dialog Helpers
+  // ===========================================================================
 
   /**
    * Builds DialogShowOptions from either a factory function or a CoreOptions object.

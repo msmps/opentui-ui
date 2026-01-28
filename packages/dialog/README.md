@@ -24,20 +24,35 @@
 
 ## Table of Contents
 
+- [Features](#features)
+- [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Core Usage](#core-usage)
   - [Quick Start](#quick-start)
   - [Quick Reference](#quick-reference)
   - [Choosing the Right Method](#choosing-the-right-method)
   - [Async Prompts](#async-prompts)
+    - [Context Methods at a Glance](#context-methods-at-a-glance)
   - [API Reference](#api-reference)
 - [Framework Adapters (React & Solid)](#framework-adapters-react--solid)
+    - [`DialogManager`](#dialogmanager)
+    - [`DialogContainerRenderable`](#dialogcontainerrenderable)
+    - [`DialogStyle`](#dialogstyle)
+  - [Update Dialog](#update-dialog)
+  - [Context Dialogs](#context-dialogs)
+- [Framework Adapters (React \& Solid)](#framework-adapters-react--solid)
   - [Setup](#setup)
+    - [Using Themes](#using-themes)
   - [Choosing the Right Method](#choosing-the-right-method-1)
   - [Async Prompts (Framework)](#async-prompts-framework)
   - [useDialog() Hook](#usedialog-hook)
   - [useDialogState() Hook](#usedialogstate-hook)
   - [useDialogKeyboard() Hook](#usedialogkeyboard-hook)
+    - [Building Custom Async Dialogs](#building-custom-async-dialogs)
+  - [`useDialog()` Hook](#usedialog-hook)
+  - [`useDialogState()` Hook](#usedialogstate-hook)
+  - [`useDialogKeyboard()` Hook](#usedialogkeyboard-hook)
+    - [Manual Implementation with `dialogId`](#manual-implementation-with-dialogid)
   - [Full Example](#full-example)
 - [Customization](#customization)
   - [Default Styling](#default-styling)
@@ -300,6 +315,49 @@ interface DialogStyle {
   paddingBottom?: number;
   paddingLeft?: number;
 }
+```
+
+---
+
+### Update Dialog
+
+Update an existing dialog's props (style, backdrop, etc.) without closing it:
+
+```ts
+const id = manager.show({
+  content: (ctx) => new TextRenderable(ctx, { content: "Hello" }),
+});
+
+// Later, update the dialog's appearance
+manager.updateDialog(id, {
+  style: { backgroundColor: "#2d4a3e", borderColor: "#16c79a" },
+  backdropOpacity: 0.8,
+});
+```
+
+### Context Dialogs
+
+Pre-register dialog templates and open them by name:
+
+```ts
+// Register once at startup
+manager.registerContextDialog<{ filename: string }>(
+  "deleteConfirm",
+  (ctx, { innerProps, close }) => {
+    const box = new BoxRenderable(ctx, { flexDirection: "column" });
+    box.add(new TextRenderable(ctx, { content: `Delete ${innerProps.filename}?` }));
+    const confirmBtn = new TextRenderable(ctx, { content: "Delete" });
+    confirmBtn.on("mouseUp", close);
+    box.add(confirmBtn);
+    return box;
+  },
+);
+
+// Open from anywhere with custom props
+manager.openContextDialog("deleteConfirm", {
+  innerProps: { filename: "document.txt" },
+  size: "small",
+});
 ```
 
 ---
