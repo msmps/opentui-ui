@@ -35,6 +35,11 @@ class Observer {
   toasts: Toast[] = [];
   dismissedToasts: Set<string | number> = new Set();
 
+  /** Queued toasts waiting to be shown when limit allows */
+  private queue: Toast[] = [];
+  /** Maximum visible toasts (default: 5, Infinity for unlimited) */
+  private limit = 5;
+
   // Cached active toasts for referential stability
   private _activeToasts: Toast[] = [];
 
@@ -77,12 +82,46 @@ class Observer {
   };
 
   /**
-   * Add a new toast
+   * Add a new toast (respects limit, queues if over)
    */
   addToast = (data: Toast): void => {
-    this.toasts = [...this.toasts, data];
-    this._updateActiveToastsCache();
-    this.publish(data);
+    // Count current visible toasts (not dismissed)
+    const visibleCount = this.toasts.filter(
+      (t) => !this.dismissedToasts.has(t.id),
+    ).length;
+
+    if (visibleCount >= this.limit) {
+      // Over limit, add to queue
+      this.queue = [...this.queue, data];
+    } else {
+      // Under limit, show immediately
+      this.toasts = [...this.toasts, data];
+      this._updateActiveToastsCache();
+      this.publish(data);
+    }
+  };
+
+  /**
+   * Process queue - show queued toasts if under limit
+   */
+  private processQueue = (): void => {
+    const visibleCount = this.toasts.filter(
+      (t) => !this.dismissedToasts.has(t.id),
+    ).length;
+
+    while (
+      this.queue.length > 0 &&
+      visibleCount + this.queue.length > visibleCount &&
+      this.toasts.filter((t) => !this.dismissedToasts.has(t.id)).length <
+        this.limit
+    ) {
+      const nextToast = this.queue.shift();
+      if (nextToast) {
+        this.toasts = [...this.toasts, nextToast];
+        this._updateActiveToastsCache();
+        this.publish(nextToast);
+      }
+    }
   };
 
   /**
@@ -172,6 +211,9 @@ class Observer {
       }
       this._updateActiveToastsCache();
     }
+
+    // Process queue to show waiting toasts
+    setTimeout(() => this.processQueue(), 0);
 
     return id;
   };
@@ -444,6 +486,56 @@ class Observer {
   getActiveToasts = (): Toast[] => {
     return this._activeToasts;
   };
+
+  // ===========================================================================
+  // Queue Management
+  // ===========================================================================
+
+  /**
+   * Set the maximum number of visible toasts.
+   * Toasts beyond this limit are queued.
+   *
+   * @example
+   * ```ts
+   * toast.setLimit(3);  // Show max 3 toasts at once
+   * toast.setLimit(Infinity);  // No limit
+   * ```
+   */
+  setLimit = (limit: number): void => {
+    this.limit = limit;
+  };
+
+  /**
+   * Get the current limit for visible toasts.
+   */
+  getLimit = (): number => {
+    return this.limit;
+  };
+
+  /**
+   * Get queued toasts waiting to be shown.
+   *
+   * @example
+   * ```ts
+   * const queued = toast.getQueue();
+   * console.log(`${queued.length} toasts waiting`);
+   * ```
+   */
+  getQueue = (): Toast[] => {
+    return [...this.queue];
+  };
+
+  /**
+   * Clear all queued toasts (keeps visible toasts).
+   *
+   * @example
+   * ```ts
+   * toast.cleanQueue();  // Remove toasts that haven't been shown yet
+   * ```
+   */
+  cleanQueue = (): void => {
+    this.queue = [];
+  };
 }
 
 /**
@@ -482,6 +574,21 @@ const getHistory = () => ToastState.toasts;
 const getToasts = () => ToastState.getActiveToasts();
 
 /**
+ * Create a new independent toast store.
+ *
+ * Useful for testing or having multiple isolated toaster instances.
+ *
+ * @example
+ * ```ts
+ * const myStore = createToastStore();
+ * myStore.success("Isolated toast!");
+ * ```
+ */
+export function createToastStore(): Observer {
+  return new Observer();
+}
+
+/**
  * The main toast API - a function with methods attached
  *
  * @example
@@ -506,6 +613,10 @@ const getToasts = () => ToastState.getActiveToasts();
  * // Dismiss
  * const id = toast('Hello');
  * toast.dismiss(id);
+ *
+ * // Queue management
+ * toast.setLimit(3);  // Max 3 visible toasts
+ * toast.cleanQueue(); // Clear queued toasts
  * toast.dismiss(); // dismiss all
  * ```
  */
@@ -519,6 +630,11 @@ export const toast = Object.assign(
     message: ToastState.message,
     promise: ToastState.promise,
     dismiss: ToastState.dismiss,
+    // Queue management
+    setLimit: ToastState.setLimit,
+    getLimit: ToastState.getLimit,
+    getQueue: ToastState.getQueue,
+    cleanQueue: ToastState.cleanQueue,
     loading: ToastState.loading,
   },
   { getHistory, getToasts },
