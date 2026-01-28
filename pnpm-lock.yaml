@@ -33,58 +33,44 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  examples/react:
-    dependencies:
-      '@opentui-ui/react':
-        specifier: workspace:^
-        version: link:../../packages/react
-      '@opentui/core':
-        specifier: ^0.1.72
-        version: 0.1.74(stage-js@1.0.0-alpha.17)(typescript@5.9.3)(web-tree-sitter@0.25.10)
-      '@opentui/react':
-        specifier: ^0.1.72
-        version: 0.1.74(react-devtools-core@7.0.1)(react@19.2.3)(stage-js@1.0.0-alpha.17)(typescript@5.9.3)(web-tree-sitter@0.25.10)(ws@8.19.0)
-      react:
-        specifier: ^19.2.3
-        version: 19.2.3
-      typescript:
-        specifier: ^5
-        version: 5.9.3
+  packages/appshell:
     devDependencies:
-      '@types/bun':
-        specifier: latest
-        version: 1.3.6
-
-  examples/solid:
-    dependencies:
       '@babel/core':
         specifier: ^7.28.5
         version: 7.28.6
       '@babel/preset-typescript':
         specifier: ^7.28.5
         version: 7.28.5(@babel/core@7.28.6)
-      '@opentui-ui/solid':
-        specifier: workspace:^
-        version: link:../../packages/solid
       '@opentui/core':
-        specifier: ^0.1.72
+        specifier: 'catalog:'
         version: 0.1.74(stage-js@1.0.0-alpha.17)(typescript@5.9.3)(web-tree-sitter@0.25.10)
+      '@opentui/react':
+        specifier: 'catalog:'
+        version: 0.1.74(react-devtools-core@7.0.1)(react@19.2.3)(stage-js@1.0.0-alpha.17)(typescript@5.9.3)(web-tree-sitter@0.25.10)(ws@8.19.0)
       '@opentui/solid':
-        specifier: ^0.1.72
+        specifier: 'catalog:'
         version: 0.1.74(solid-js@1.9.9)(stage-js@1.0.0-alpha.17)(typescript@5.9.3)(web-tree-sitter@0.25.10)
+      '@types/bun':
+        specifier: ^1
+        version: 1.3.6
+      '@types/react':
+        specifier: ^19
+        version: 19.2.8
       babel-preset-solid:
         specifier: 1.9.9
         version: 1.9.9(@babel/core@7.28.6)(solid-js@1.9.9)
+      react:
+        specifier: ^19.2.3
+        version: 19.2.3
       solid-js:
         specifier: 1.9.9
         version: 1.9.9
+      tsdown:
+        specifier: ^0.18.2
+        version: 0.18.4(typescript@5.9.3)
       typescript:
         specifier: ^5
         version: 5.9.3
-    devDependencies:
-      '@types/bun':
-        specifier: latest
-        version: 1.3.6
 
   packages/core:
     devDependencies:

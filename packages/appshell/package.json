@@ -1,0 +1,76 @@
+{
+  "name": "@opentui-ui/appshell",
+  "version": "0.0.1",
+  "description": "A appshell component for terminal UIs built on OpenTUI",
+  "author": "Matt Simpson",
+  "license": "MIT",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msmps/opentui-ui.git",
+    "directory": "packages/appshell"
+  },
+  "type": "module",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.mts",
+      "import": "./dist/react.mjs"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.mts",
+      "import": "./dist/solid.mjs"
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/msmps/opentui-ui/issues"
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/msmps/opentui-ui#readme",
+  "keywords": [
+    "appshell",
+    "tui",
+    "terminal",
+    "cli",
+    "opentui"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@opentui/core": "catalog:",
+    "@opentui/react": "catalog:",
+    "@opentui/solid": "catalog:",
+    "@types/bun": "^1",
+    "@types/react": "^19",
+    "react": "^19.2.3",
+    "tsdown": "^0.18.2",
+    "typescript": "^5",
+    "@babel/core": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "babel-preset-solid": "1.9.9",
+    "solid-js": "1.9.9"
+  },
+  "peerDependencies": {
+    "@opentui/core": "catalog:",
+    "@opentui/react": "catalog:",
+    "@opentui/solid": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@opentui/react": {
+      "optional": true
+    },
+    "@opentui/solid": {
+      "optional": true
+    }
+  }
+}
